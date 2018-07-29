@@ -13,9 +13,10 @@
 #include <ESP8266WiFi.h>
 #include "ldprotocol.h"
 #include "povgeometry_g3.h"
+#include "private.h"
 
-const char* ssid = "myssid";
-const char* password = "mypass";
+const char* ssid = MYSSID;
+const char* password = MYPWD;
 
 
 //#define NUMSECTORS 100
