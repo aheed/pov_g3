@@ -34,6 +34,9 @@ const char* password = MYPWD;
 #define LED_OFF (HIGH)
 #define INTERRUPT_PIN 4
 
+//#define DEBUG_POV_SERVER
+#define SERVER_TIMEOUT 5000 //ms to wait for any server status change
+
 /*
 //Adafruit_DotStar strip = Adafruit_DotStar(
 //  NUMPIXELS, DATAPIN, CLOCKPIN, DOTSTAR_BRG);
@@ -73,85 +76,139 @@ void blink() {
   
 }
 
-/*typedef enum SERVERSTATE
+
+///////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////
+
+typedef enum SERVERSTATE
 {
    SST_IDLE,
    SST_CONNECTED,
-   SST_READING,
-   SST_RESPONDING
+   SST_RESPONDING,
+   SST_WAIT_CLOSE
 } SERVERSTATE;
 
 SERVERSTATE servstate =  SST_IDLE;
-*/
-
+unsigned long lastStatusChange;
+WiFiClient  currentClient;
+int totalbytesread;
 
 void handleServer()
 {
-  int bytesread, totalbytesread;
-  
-  // Check if a client has connected
-  WiFiClient client = server.available();
-  if (!client) {
-    return;
-  }
-  
-  // Wait until the client sends some data
-  Serial.println("new client");
-  while(!client.available()){
-    delay(1);
+  int bytesread;
+
+  if (servstate == SST_IDLE) {
+    WiFiClient client = server.available();
+    if (!client) {
+      return;
+    }
+
+#ifdef DEBUG_POV_SERVER
+    Serial.println("New client");
+#endif
+
+    currentClient = client;
+    totalbytesread = 0;
+    servstate = SST_CONNECTED;
+    lastStatusChange = millis();
   }
 
-  bytesread = 0;
-  totalbytesread = 0;
-  const int maxdelays = 100;
-  int delays = 0;
+  bool keepCurrentClient = false;
+  bool callYield = false;
+
+  if (currentClient.connected()) {
+    switch (servstate) {
+    /*case SST_IDLE:
+      // No-op to avoid C++ compiler warning
+      break;*/
+    case SST_CONNECTED:
+
+      if (currentClient.available()) {
+    
+        bytesread = currentClient.read(
+                         leddata + totalbytesread,  //pointer arithmetic
+                         POV_FRAME_SIZE - totalbytesread);
+        totalbytesread += bytesread;
+        
+#ifdef DEBUG_POV_SERVER    
+        //Serial.println("Got " + String(bytesread) + " bytes");
+#endif
+    
+        if(bytesread)
+        {
+#ifdef DEBUG_POV_SERVER
+          Serial.println("Bytes read: " + String(totalbytesread) + "  Expected bytes:" + String(POV_FRAME_SIZE));
+#endif                        
+          if(totalbytesread == POV_FRAME_SIZE)
+          {
+#ifdef DEBUG_POV_SERVER
+            Serial.println("Got frame!");
+#endif               
+            currentClient.flush();
+            servstate = SST_RESPONDING;
+          }
+
+          lastStatusChange = millis();
+        }        
+
+      } //available
+
+      if (millis() - lastStatusChange <= SERVER_TIMEOUT) {
+        keepCurrentClient = true;
+      }
+      callYield = true;        
+      break;
+
+    case SST_RESPONDING:
+      {
+      char response[LD_ACK_SIZE] = {LD_ACK_CHAR};
+      if(currentClient.write(response, LD_ACK_SIZE) < 0)
+      {
+#ifdef DEBUG_POV_SERVER
+        Serial.println("failed to send ACK");
+#endif
+      }
+      else
+      {
+        keepCurrentClient = true;
+        callYield = true;
+      }
+      servstate = SST_WAIT_CLOSE;
+      }
+      break;
       
-  do
-  {
-    //delay(1);
-    
-    bytesread = client.read(
-                     leddata + totalbytesread,  //pointer arithmetic
-                     POV_FRAME_SIZE - totalbytesread);
-    totalbytesread += bytesread;
+    case SST_WAIT_CLOSE:
+      // Wait for client to close the connection
+      if (millis() - lastStatusChange <= SERVER_TIMEOUT) {
+        keepCurrentClient = true;
+        callYield = true;
+      }
+      break;
 
-    //Serial.println("Got " + String(bytesread) + " bytes");
+    default:
+      //should not happen
+      break;
+      
+    }//switch
+  }//connected
 
-    if(!bytesread)
-    {
-      delays++;
-      delay(1);
-    }
-    else
-    {
-      delays = 0;
-    }
-
-  //} while((totalbytesread < POV_FRAME_SIZE) && (bytesread > 0));
-  } while((totalbytesread < POV_FRAME_SIZE) && (delays < maxdelays));
-
-  client.flush();
-
-  Serial.println("Bytes read: " + String(totalbytesread) + "  Expected bytes:" + String(POV_FRAME_SIZE));
-
-  if((totalbytesread != POV_FRAME_SIZE) || (delays >= maxdelays))
-  {
-    Serial.println("failed to receive frame");
-    return;
+  if (!keepCurrentClient) {
+#ifdef DEBUG_POV_SERVER    
+    Serial.println("Closing connection to client");
+#endif    
+    currentClient = WiFiClient();
+    servstate = SST_IDLE;
   }
 
-  char response[LD_ACK_SIZE] = {LD_ACK_CHAR};
-  if(client.write(response, LD_ACK_SIZE) < 0)
-  {
-    Serial.println("failed to send ACK");
+  if (callYield) {
+//    yield();
   }
-    
-  delay(1);
-  Serial.println("Client disonnected");
-
-  // The client will actually be disconnected 
-  // when the function returns and 'client' object is detroyed
+  
 }
+
+///////////////////////////////////////////////////////
+///////////////////////////////////////////////////////
+
 
 void setup() {
 
@@ -215,7 +272,7 @@ uint32_t color = 0xFF0000;      // 'On' color (starts red)
 
 int loopcnt = 0;
 
-uint32_t lastLoopCycleCnt, newLoopCycleCnt, cyclesPerLoop;
+uint32_t lastLoopCycleCnt, newLoopCycleCnt, cyclesPerLoop, maxCyclesPerLoop;
 
 void loop() {
 
@@ -234,6 +291,11 @@ void loop() {
   newLoopCycleCnt = ESP.getCycleCount();
   cyclesPerLoop = newLoopCycleCnt - lastLoopCycleCnt;
   lastLoopCycleCnt = newLoopCycleCnt;
+  if(cyclesPerLoop > maxCyclesPerLoop)
+  {
+    //new max cycle count
+    maxCyclesPerLoop = cyclesPerLoop;
+  }
   //-----------------------
 
   handleServer();
@@ -245,14 +307,18 @@ void loop() {
 
   if((loopcnt % 1000) == 0)
   {
-    Serial.println(String(cyclesPerRev) + " : " + String(currentSector) + " : " + String(cyclesSinceRevStart) + " : " + String(cyclesPerLoop));
+    Serial.println(String(cyclesPerRev) + " : " + String(currentSector) + " : " + String(cyclesSinceRevStart) + " : " + String(cyclesPerLoop) + " : " + String(maxCyclesPerLoop));
     /*
     int i;
     for(i=0; i<(NOF_LEDS * LED_DATA_SIZE); i++)
     {
       Serial.print(String(leddata[(currentSector * NOF_LEDS * LED_DATA_SIZE) + i]) + " ");
     }
-    Serial.println("");*/
+    Serial.println("");*/    
+  }
+  else if((loopcnt % 1000) == 1)
+  {
+    maxCyclesPerLoop = 0;
   }
 
 
@@ -289,5 +355,4 @@ void loop() {
   loopcnt++;
 
   digitalWrite( PIN_OUT, state );
-  //digitalWrite( PIN_OUT, LED_OFF);
 }
