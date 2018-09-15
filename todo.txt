@@ -1,0 +1,13 @@
+sim:
+Black background
+Change pen width
+Remove unnecessary stuff
+Share geometry file with client and with sketch
+
+Pic Client:
+parameterized intensity
+end output with newline
+configurable zoom
+
+
+

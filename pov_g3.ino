@@ -201,7 +201,7 @@ void handleServer()
   }
 
   if (callYield) {
-//    yield();
+    yield();
   }
   
 }
@@ -222,7 +222,7 @@ void setup() {
   */
 
   SPI.begin();
-  SPI.setFrequency(8000000L);
+  SPI.setFrequency(12000000L);
   SPI.setBitOrder(MSBFIRST);
   SPI.setDataMode(SPI_MODE0);
 
@@ -355,4 +355,6 @@ void loop() {
   loopcnt++;
 
   digitalWrite( PIN_OUT, state );
+
+  yield();
 }
