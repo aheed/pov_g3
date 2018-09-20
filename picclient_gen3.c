@@ -7,6 +7,7 @@ $ ./picg3 <server ip> test_photo.bmp
 
 #include <stdio.h>
 #include <time.h>
+#include <string.h>
 #include "leddata.h"
 #include "ldclient.h"
 #include "povgeometry_g3.h"
@@ -26,6 +27,7 @@ int main(int argc, char *argv[]) {
   char *pBuf;
   int i;
   int gamma = 0;
+  int algo = 3;
 
   if(argc < 3)
   {
@@ -35,9 +37,23 @@ int main(int argc, char *argv[]) {
 
   for(i=3; i<argc; i++)
   {
+    printf("arg %d:%s\n", i, argv[i]);  	 
+  	 
     if(argv[i][0] == 'g')
     {
       gamma = 1;
+    }
+    
+    if(!strcmp(argv[i], "-a3"))
+    {
+      algo = 3;
+      printf("algo 3!!\n");
+    }
+    
+    if(!strcmp(argv[i], "-a4"))
+    {
+      algo = 4;
+      printf("algo 4!!\n");
     }
   }
 
@@ -62,18 +78,19 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
+ 
   if(LDInitFromBmpData(pBuf,
-                    &bmh,
-                    MAX_BRIGHTNESS,
-                    NOF_SECTORS,
-                    NOF_LEDS,
-                    povledRadius,
-                    gamma))
-   {
-     printf("failed to init\n");
-     return 2;
-   }
-
+                       &bmh,
+                       MAX_BRIGHTNESS,
+                       NOF_SECTORS,
+                       NOF_LEDS,
+                       povledRadius,
+                       gamma))
+  {
+    printf("failed to init\n");
+    return 2;
+  }  
+  
 
   if(LDconnect(argv[1]))
   {
@@ -93,11 +110,22 @@ int main(int argc, char *argv[]) {
                 0,  //y offset, bmp pixels
                 leddata);*/
 
-  LDgetLedDataFromBmpData3(pBuf,
-                             MAX_BRIGHTNESS,
-                             leddata,
-                             0,
-                             gamma);
+   if(algo == 3)
+   {
+     LDgetLedDataFromBmpData3(pBuf,
+                              MAX_BRIGHTNESS,
+                              leddata,
+                              0,
+                              gamma);
+   }   
+   else if(algo == 4)
+   {
+     LDgetLedDataFromBmpData4(pBuf,
+                              MAX_BRIGHTNESS,
+                              leddata,
+                              0,
+                              gamma);
+   }
 
 
 //------------------------------------

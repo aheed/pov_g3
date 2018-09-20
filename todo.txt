@@ -3,11 +3,21 @@ Black background
 Change pen width
 Remove unnecessary stuff
 Share geometry file with client and with sketch
+change to clockwise
 
 Pic Client:
 parameterized intensity
 end output with newline
 configurable zoom
+change to clockwise
+
+new algo, weighted pixel influence
+  variable sector-led-combo area of pixel influence size
+    square l = square( max(ledradius * factor1, ledsectorradius * factor2))
+  variable sector-led-combo area of pixel influence shape
+    more tangential reach for leds far from the centre
 
 
+issue:
+Some sectors are black. One problem per quadrant it seems.
 

@@ -11,6 +11,18 @@
 
 #define LED_DATA_SIZE 4 //bytes per LED
 
+#define MAX_INPUT_PIXELS_PER_SECTORLED 1000
+#define LED_SIZE_FACTOR 1.0
+#define SECTOR_SIZE_FACTOR 3.0
+#define MAX_PIXEL_DISTANCE 60
+
+#ifndef MAX
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#endif
+#ifndef MIN
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+#endif
+
 typedef struct LDSectorLedAreaColor
 {
   int blue;
@@ -18,6 +30,13 @@ typedef struct LDSectorLedAreaColor
   int red;
   int nof_pixels;
 } LDSectorLedAreaColor;
+
+typedef struct LDPixelWeight
+{	
+	int pixelx;
+	int pixely;
+	double weight; // [0.0..1.0]
+} LDPixelWeight;
 
 typedef struct LDcache
 {
@@ -44,6 +63,9 @@ typedef struct LDcache
 
   // Temporary storage for averaging color in each sector/led combo
   struct LDSectorLedAreaColor* pSectorLedAvg;
+  
+  // Weights for a number of pixel input per
+  struct LDPixelWeight* pPixelWeights; 
 } LDCache;
 
 
@@ -56,7 +78,10 @@ static LDCache theLDCache = {
   NULL,
   NULL,
   {0},
-  0
+  0,
+  NULL,
+  NULL,
+  NULL
 };
 
 
@@ -100,6 +125,42 @@ void ConvertPicCoordsToBmpCoordsNoBoundsCheck(
   *pyout = yin * (pHeader->Height - 1) / maxyin;
 }
 
+//////////////////////////////////////////////////////////////
+//
+void ConvertPicCoordsToBmpCoordsTruncate(
+                             int maxxin, int maxyin,
+                             int xin, int yin,
+                             const BITMAPHEADER * const pHeader,
+                             int *pxout, int *pyout)
+{
+  if(xin < 0) xin = 0;
+  if(yin < 0) yin = 0;
+  if(xin > maxxin) xin = maxxin;
+  if(yin > maxyin) yin = maxyin;
+
+  *pxout = xin * (pHeader->Width - 1)/ maxxin;
+  *pyout = yin * (pHeader->Height - 1) / maxyin;
+}
+
+///////////////////////////////////////////////////////////////
+//
+// Returns squared distance from a given point to a given pixel.
+// The returned value is the same length unit (mm or whatever)
+// as the input coordinates.
+double SquareDistanceToPixel(const double maxx,
+                             const double maxy,
+                             const double xin,
+                             const double yin,
+                             const int bmpx,
+                             const int bmpy,
+                             const BITMAPHEADER * const pHeader)
+{
+	// location of pixel centre
+	double xCoord = (bmpx + (1.0/2.0)) * maxx / pHeader->Width;
+	double yCoord = (bmpy + (1.0/2.0)) * maxy / pHeader->Height;
+	
+	return (xin - xCoord) * (xin - xCoord) + (yin - yCoord) * (yin - yCoord);
+}
 
 ///////////////////////////////////////////////////////////////
 //
@@ -389,6 +450,117 @@ int LDInitFromBmpData(char * const pBmpBuf,
       LDRelease();
       return 4;
   }
+  
+  
+  ////////////////////////////////////////////////////////////////
+  //
+  // Allocate storage for pixel weights for each sector/led combo
+  theLDCache.pPixelWeights = (struct LDPixelWeight*)
+    malloc(nofSectors * nofLeds * (MAX_INPUT_PIXELS_PER_SECTORLED + 1) * sizeof(struct LDPixelWeight));
+  if(!theLDCache.pPixelWeights)
+  {
+      //failed to allocate memory
+      LDRelease();
+      return 5;
+  }
+
+  ////////////////////////////////////////////////////////////////
+  //
+  // Calculate weights  
+ 
+  	 
+  // Assume even distance between leds
+  // Let each led have as much influence in tangential direction as radial
+  double ledSectorRadius = (double)(ledRadiusArray[1] - ledRadiusArray[0]) * SECTOR_SIZE_FACTOR / 2;
+  double lsq = ledSectorRadius * ledSectorRadius;
+    
+  for(sector=0; sector<nofSectors; sector++)
+  //for(sector=0; sector<1; sector++) //TEMP
+  {
+    
+    startAng = aLen * sector + aLen/2;
+    startAngRad = ((double)startAng / 5760) * 2 * MYPI;
+    
+    double cosAngle= cos((double)startAngRad);
+    double minusSinAngle= -sin((double)startAngRad);
+    
+    printf(".");
+    fflush(stdout);
+  	 
+    for(led=0; led<nofLeds; led++)
+    //for(led=0; led<2; led++) //TEMP
+    {
+    	// The number of pixels with any weight for the sector-led-combo
+    	int weightyPixels = 0;
+    	double totalWeight = 0;
+    	
+    	// calculate coordinates of led-sector-combo centre
+    	double lsxcoord = cosAngle * ledRadiusArray[led];
+      double lsycoord = minusSinAngle * ledRadiusArray[led];
+      
+      // convert to coords with origo in top left corner of image
+      lsxcoord = lsxcoord + maxx / 2;
+      lsycoord = lsycoord + maxy / 2;
+      
+      // Get pixel coords at approximate centre of led-sector-combo
+      ConvertPicCoordsToBmpCoordsTruncate(maxx, maxy, lsxcoord, lsycoord, &theLDCache.bmh, &bmpx, &bmpy);
+      int bmpxmin = MAX(0, bmpx - MAX_PIXEL_DISTANCE);
+      int bmpxmax = MIN(theLDCache.bmh.Width - 1, bmpx + MAX_PIXEL_DISTANCE);
+      int bmpymin = MAX(0, bmpy - MAX_PIXEL_DISTANCE);
+      int bmpymax = MIN(theLDCache.bmh.Height - 1, bmpy + MAX_PIXEL_DISTANCE);
+      
+      int sectorledOffset = (sector * nofLeds + led) * (MAX_INPUT_PIXELS_PER_SECTORLED+1); 
+    	
+      for(x = bmpxmin; x <= bmpxmax; x++)
+		{
+    	  for(y = bmpymin; y <= bmpymax; y++)
+    	  {
+    		  // Get square distance r
+           double rsq = SquareDistanceToPixel(maxx, maxy, lsxcoord, lsycoord, x, y, &theLDCache.bmh);
+    		  
+    		  // calculate weight
+    		  double w = fmax(0, 1 - rsq / lsq);
+    		  
+    		  if( (w > 0) && (weightyPixels < MAX_INPUT_PIXELS_PER_SECTORLED))
+    		  {
+    		  	 struct LDPixelWeight* pWeight = &theLDCache.pPixelWeights[sectorledOffset + weightyPixels];
+    		  	 pWeight->pixelx = x;
+    		  	 pWeight->pixely = y;
+    		  	 pWeight->weight = w;
+    		    weightyPixels++;
+    	       totalWeight += w;    	       
+    		  }    		     		  
+    	  }
+    	}        	
+    	
+    	//// Normalize the weights to be 1.0 in total
+      for(i = 0; i < weightyPixels; i++)
+		{
+			struct LDPixelWeight* pWeight = &theLDCache.pPixelWeights[sectorledOffset + i];
+			pWeight->weight /= totalWeight;
+			
+			// debug
+	      if((sector == 0) && ((led==0) || (led==1)))
+	      {
+	   	  printf("[%d, %d] %f  0x%x 0x%x\n", pWeight->pixelx, pWeight->pixely, pWeight->weight, (long int)theLDCache.pPixelWeights, (long int)pWeight); //TEMP
+	      }
+		}
+		
+      // Add goalkeeper element with zero weight
+	   struct LDPixelWeight* pWeight = &theLDCache.pPixelWeights[sector * led * (MAX_INPUT_PIXELS_PER_SECTORLED+1) + weightyPixels];
+	   pWeight->pixelx = 0; // Not used
+	   pWeight->pixely = 0; // Not used
+	   pWeight->weight = 0.0;
+	   
+	   // debug
+	   if(sector == 0)
+	   {
+	   	printf("\nweightyPixels:%d\n", weightyPixels);
+	   }
+    		  
+    }
+  }
+    
 
   return 0;
 }
@@ -536,6 +708,85 @@ void LDgetLedDataFromBmpData3(const char * const pBmpBuf,
 
 
 }
+
+
+///////////////////////////////////////////////////////////////
+// Uses weighted average of several pixels                             
+void LDgetLedDataFromBmpData4(const char * const pBmpBuf,
+                             const unsigned char brightness,
+                             char * const pLeddataOut,
+                             const int yflip,
+                             const int gamma)
+{
+  unsigned char* pLed;
+
+  int sector, led;
+  int x, y, yflipped; //bmp coordinates
+  int pixelvalue;
+  int sectorLedIndex;
+  int ledvalue;
+  struct LDSectorLedAreaColor *pLedAvg;
+  
+  printf("LDgetLedDataFromBmpData4\n");
+
+  Q_ASSERT(theLDCache.pPixelToLedMap);
+  Q_ASSERT(theLDCache.pSectorLedAvg);
+  
+
+  pLed = pLeddataOut;
+
+  for(sectorLedIndex = 0; sectorLedIndex < (theLDCache.nofSectors * theLDCache.nofLeds); sectorLedIndex++)
+  {
+  	
+  	 double bluevalue = 0;
+    double greenvalue = 0;
+    double redvalue = 0;
+        
+    *pLed++ = 0xFF; //Header
+    
+    struct LDPixelWeight* pWeight = &theLDCache.pPixelWeights[sectorLedIndex * (MAX_INPUT_PIXELS_PER_SECTORLED+1)];
+    
+    while(pWeight->weight > 0.0)
+    {
+    	
+    	if(sectorLedIndex == 0)
+    	{
+    	  printf("[%d, %d] %f    0x%x\n", pWeight->pixelx, pWeight->pixely, pWeight->weight, (long int)pWeight); //TEMP
+    	}
+    	    	
+      pixelvalue = GetPixel(&theLDCache.bmh, pBmpBuf, pWeight->pixelx, pWeight->pixely);
+      
+      bluevalue  += ((pixelvalue & 0x00FF0000) >> 16) * pWeight->weight;
+      greenvalue += ((pixelvalue & 0x0000FF00) >> 8) * pWeight->weight;
+      redvalue   += (pixelvalue & 0x000000FF) * pWeight->weight;
+    	
+    	pWeight++;
+    }
+    
+    Q_ASSERT(round(bluevalue) < 256);
+    Q_ASSERT(round(greenvalue) < 256);
+    Q_ASSERT(round(redvalue) < 256);
+    
+    // Gamma correction and brightness adjustment
+    if(gamma)
+    {    	
+      *pLed++ = (theLDCache.gammaLUT[(int)round(bluevalue)] * brightness) / 255;
+      *pLed++ = (theLDCache.gammaLUT[(int)round(greenvalue)] * brightness) / 255;
+      *pLed++ = (theLDCache.gammaLUT[(int)round(redvalue)] * brightness) / 255;
+    }
+    else
+    {
+      *pLed++ = ((int)round(bluevalue) * brightness) / 255;
+      *pLed++ = ((int)round(greenvalue) * brightness) / 255;
+      *pLed++ = ((int)round(redvalue) * brightness) / 255;
+    }
+    
+  }
+    
+}
+                             
+                             
+                             
 
 ///////////////////////////////////////////////////////////////
 //

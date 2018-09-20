@@ -50,6 +50,13 @@ void LDgetLedDataFromBmpData3(const char * const pBmpBuf,
                              const int yflip,
                              const int gamma);
 
+// Uses weighted average of several pixels                             
+void LDgetLedDataFromBmpData4(const char * const pBmpBuf,
+                             const unsigned char brightness,
+                             char * const pLeddataOut,
+                             const int yflip,
+                             const int gamma);
+
 void LDsetLedDataBlack(const int nofSectors,
                        const int nofLeds,
                        char * const pLeddataOut);
