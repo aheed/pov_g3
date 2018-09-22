@@ -6,6 +6,7 @@ $ ./picg3 <server ip> test_photo.bmp
 
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 #include <string.h>
 #include "leddata.h"
@@ -15,9 +16,15 @@ $ ./picg3 <server ip> test_photo.bmp
 
 #define MAX_BRIGHTNESS 64
 
+static uint8_t brightness = MAX_BRIGHTNESS;
+
 static uint8_t leddata[POV_FRAME_SIZE] = {0};
 static uint8_t leddata2[POV_FRAME_SIZE] = {0}; //For debug only
 
+typedef enum ArgParseState {
+	APS_INITIAL,
+	APS_BRIGHTNESS
+} ArgParseState;
 
 ///////////////////////////////////////////////
 //
@@ -35,9 +42,17 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
+  ArgParseState aps = APS_INITIAL;
   for(i=3; i<argc; i++)
   {
-    printf("arg %d:%s\n", i, argv[i]);  	 
+    printf("arg %d:%s\n", i, argv[i]);
+    
+    if(aps == APS_BRIGHTNESS)
+    {
+    	brightness = atoi(argv[i]);
+    	aps = APS_INITIAL;
+    	printf("brightness=%d\n", brightness);
+    }  	 
   	 
     if(argv[i][0] == 'g')
     {
@@ -54,6 +69,11 @@ int main(int argc, char *argv[]) {
     {
       algo = 4;
       printf("algo 4!!\n");
+    }
+    
+    if(!strcmp(argv[i], "-b"))
+    {
+      aps = APS_BRIGHTNESS;
     }
   }
 
@@ -113,7 +133,7 @@ int main(int argc, char *argv[]) {
    if(algo == 3)
    {
      LDgetLedDataFromBmpData3(pBuf,
-                              MAX_BRIGHTNESS,
+                              brightness,
                               leddata,
                               0,
                               gamma);
@@ -121,7 +141,7 @@ int main(int argc, char *argv[]) {
    else if(algo == 4)
    {
      LDgetLedDataFromBmpData4(pBuf,
-                              MAX_BRIGHTNESS,
+                              brightness,
                               leddata,
                               0,
                               gamma);

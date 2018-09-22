@@ -542,12 +542,12 @@ int LDInitFromBmpData(char * const pBmpBuf,
 			// debug
 	      if((sector == 0) && ((led==0) || (led==1)))
 	      {
-	   	  printf("[%d, %d] %f  0x%x 0x%x\n", pWeight->pixelx, pWeight->pixely, pWeight->weight, (long int)theLDCache.pPixelWeights, (long int)pWeight); //TEMP
+//	   	  printf("[%d, %d] %f  0x%x 0x%x\n", pWeight->pixelx, pWeight->pixely, pWeight->weight, (long int)theLDCache.pPixelWeights, (long int)pWeight); //TEMP
 	      }
 		}
 		
       // Add goalkeeper element with zero weight
-	   struct LDPixelWeight* pWeight = &theLDCache.pPixelWeights[sector * led * (MAX_INPUT_PIXELS_PER_SECTORLED+1) + weightyPixels];
+	   struct LDPixelWeight* pWeight = &theLDCache.pPixelWeights[sectorledOffset + weightyPixels];
 	   pWeight->pixelx = 0; // Not used
 	   pWeight->pixely = 0; // Not used
 	   pWeight->weight = 0.0;
@@ -555,7 +555,7 @@ int LDInitFromBmpData(char * const pBmpBuf,
 	   // debug
 	   if(sector == 0)
 	   {
-	   	printf("\nweightyPixels:%d\n", weightyPixels);
+//	   	printf("\nweightyPixels:%d\n", weightyPixels);
 	   }
     		  
     }
@@ -751,7 +751,7 @@ void LDgetLedDataFromBmpData4(const char * const pBmpBuf,
     	
     	if(sectorLedIndex == 0)
     	{
-    	  printf("[%d, %d] %f    0x%x\n", pWeight->pixelx, pWeight->pixely, pWeight->weight, (long int)pWeight); //TEMP
+ //   	  printf("[%d, %d] %f    0x%x\n", pWeight->pixelx, pWeight->pixely, pWeight->weight, (long int)pWeight); //TEMP
     	}
     	    	
       pixelvalue = GetPixel(&theLDCache.bmh, pBmpBuf, pWeight->pixelx, pWeight->pixely);
