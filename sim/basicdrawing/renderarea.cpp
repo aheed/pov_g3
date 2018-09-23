@@ -43,7 +43,7 @@ const int yc = 250;
 //const int xc = 500;
 //const int yc = 450;
 
-const float povLedScale = 0.17;
+const float povLedScale = 0.10; //0.17;
 
 
 // assume 24 bit colors
@@ -203,32 +203,35 @@ void RenderArea::paintEvent(QPaintEvent * /* event */)
 {
     QPainter painter(this);
     painter.save();
+
+    painter.setRenderHint(QPainter::Antialiasing, false);
+    painter.setPen(palette().dark().color());
+    painter.setBrush(Qt::SolidPattern);
+    painter.drawRect(QRect(0, 0, width() - 1, height() - 1));
+
     {
         int sector;
         QPen pen;
-        int shiftbits;
         int i;
         int aLen;
         int startAng;
-        int supersector;
         unsigned char* pChar = (unsigned char*)m_pLedDataBuf;
 
 
         aLen = 5760 / NOF_SECTORS;
 
-        //                    painter.drawRect(rect);
-
-        pen.setWidth(60 * povLedScale);
+        pen.setWidth(30 * povLedScale);
 
         for(sector=0; sector<NOF_SECTORS; sector++)
         {
-            startAng = aLen * sector;
-
-            shiftbits = 7 - sector % 8;  //[0,7]
-            supersector = sector / 8; //[0, NOF_SECTORS/8]
 
             for(i=0; i<NOF_LEDS; i++)
             {
+                startAng = aLen * sector;
+                if(povledRadius[i] < 0)
+                {
+                    startAng += 5760 / 2; //Add 180 degrees
+                }
 
                 if(LDGetReceivedFrames() > 0)
                 {
@@ -239,7 +242,7 @@ void RenderArea::paintEvent(QPaintEvent * /* event */)
 
                     pen.setColor(QColor(ledred, ledgreeen, ledblue));
                     painter.setPen(pen);
-                    painter.drawArc(xc - povLedScale * povledRadius[i], yc - povLedScale * povledRadius[i], povLedScale * povledRadius[i] * 2, povLedScale * povledRadius[i] * 2, startAng, aLen);
+                    painter.drawArc(xc - std::abs(povLedScale * povledRadius[i]), yc - std::abs(povLedScale * povledRadius[i]), std::abs(povLedScale * povledRadius[i] * 2), std::abs(povLedScale * povledRadius[i] * 2), startAng, aLen);
                 }
                 else
                 {
@@ -260,8 +263,5 @@ void RenderArea::paintEvent(QPaintEvent * /* event */)
 
     painter.restore();
 
-    painter.setRenderHint(QPainter::Antialiasing, false);
-    painter.setPen(palette().dark().color());
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRect(QRect(0, 0, width() - 1, height() - 1));
+
 }

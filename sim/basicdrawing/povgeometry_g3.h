@@ -2,7 +2,7 @@
 #define POVGEOMETRY_G3_H
 
 #define NOF_SECTORS 120
-#define NOF_LEDS 32
+#define NOF_LEDS 64 //32
 #define LED_DATA_SIZE 4
 #define POV_FRAME_SIZE (NOF_SECTORS * NOF_LEDS * LED_DATA_SIZE)
 

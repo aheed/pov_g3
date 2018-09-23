@@ -13,8 +13,8 @@
 
 #define MAX_INPUT_PIXELS_PER_SECTORLED 1000
 #define LED_SIZE_FACTOR 1.0
-#define SECTOR_SIZE_FACTOR 3.0
-#define MAX_PIXEL_DISTANCE 60
+#define SECTOR_SIZE_FACTOR 1.3
+#define MAX_PIXEL_DISTANCE 20
 
 #ifndef MAX
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
@@ -539,11 +539,12 @@ int LDInitFromBmpData(char * const pBmpBuf,
 			struct LDPixelWeight* pWeight = &theLDCache.pPixelWeights[sectorledOffset + i];
 			pWeight->weight /= totalWeight;
 			
-			// debug
-	      if((sector == 0) && ((led==0) || (led==1)))
+			/*// debug
+	      if(((sector == 0) || (sector == 0)) && ((led==0) || (led==1) || (led==2)))
 	      {
-//	   	  printf("[%d, %d] %f  0x%x 0x%x\n", pWeight->pixelx, pWeight->pixely, pWeight->weight, (long int)theLDCache.pPixelWeights, (long int)pWeight); //TEMP
-	      }
+	   	  printf("[%d, %d] %f  0x%x 0x%x", pWeight->pixelx, pWeight->pixely, pWeight->weight, (long int)theLDCache.pPixelWeights, (long int)pWeight); //TEMP
+	   	  printf(" s:%d l:%d lsx:%f lsy:%f\n", sector, led, lsxcoord, lsycoord);
+	      }*/
 		}
 		
       // Add goalkeeper element with zero weight
@@ -727,7 +728,8 @@ void LDgetLedDataFromBmpData4(const char * const pBmpBuf,
   int ledvalue;
   struct LDSectorLedAreaColor *pLedAvg;
   
-  printf("LDgetLedDataFromBmpData4\n");
+  //printf("LDgetLedDataFromBmpData4\n");
+  printf("\n");
 
   Q_ASSERT(theLDCache.pPixelToLedMap);
   Q_ASSERT(theLDCache.pSectorLedAvg);

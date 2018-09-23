@@ -1,12 +1,12 @@
 sim:
-Black background
-Change pen width
+Black background*
+Change pen width*
 Remove unnecessary stuff
 Share geometry file with client and with sketch
 change to clockwise
 
 Pic Client:
-parameterized intensity
+parameterized intensity*
 end output with newline
 configurable zoom
 change to clockwise
@@ -18,6 +18,8 @@ new algo, weighted pixel influence
     more tangential reach for leds far from the centre
 
 
-issue:
-Some sectors are black. One problem per quadrant it seems.
+issues:
+Some kind of geometry problem. Both with algo3 and algo4 but different !?
+  Only problem with non-square pic.
+
 
