@@ -37,6 +37,8 @@ const char* password = MYPWD;
 //#define DEBUG_POV_SERVER
 #define SERVER_TIMEOUT 5000 //ms to wait for any server status change
 
+#define DEBOUNCE_MIN_REV_CYCLES 5000000
+
 /*
 //Adafruit_DotStar strip = Adafruit_DotStar(
 //  NUMPIXELS, DATAPIN, CLOCKPIN, DOTSTAR_BRG);
@@ -57,6 +59,7 @@ uint8_t leddata[POV_FRAME_SIZE];
 volatile int state = LOW;
 volatile uint32_t cyclesPerRev = 1000;
 volatile uint32_t lastCycleCnt = 0;
+volatile uint32_t revs = 0;
 
 WiFiServer server(LDPORT);
 
@@ -65,12 +68,13 @@ void blink() {
   uint32_t newCycleCnt = ESP.getCycleCount();
   uint32_t newCyclesPerRev = newCycleCnt - lastCycleCnt;
   
-  if(newCyclesPerRev > 10000)
+  if(newCyclesPerRev > DEBOUNCE_MIN_REV_CYCLES)
   {
     // Debounce check passed
     cyclesPerRev = newCyclesPerRev;
     lastCycleCnt = newCycleCnt;  
-
+    
+    revs++;
     state = !state;
   }
   
@@ -304,10 +308,16 @@ void loop() {
   uint32_t currentCycleCnt = ESP.getCycleCount();
   uint32_t cyclesSinceRevStart = currentCycleCnt - lastCycleCnt;
   int currentSector =  ((cyclesSinceRevStart * NOF_SECTORS) / cyclesPerRev) % NOF_SECTORS;
+  /*int currentSector =  (((cyclesSinceRevStart/100) * NOF_SECTORS) / (cyclesPerRev/100));
+  if(currentSector >= NOF_SECTORS)
+  {
+    // avoid buffer overrun
+    currentSector = NOF_SECTORS - 1;
+  }*/
 
   if((loopcnt % 1000) == 0)
   {
-    Serial.println(String(cyclesPerRev) + " : " + String(currentSector) + " : " + String(cyclesSinceRevStart) + " : " + String(cyclesPerLoop) + " : " + String(maxCyclesPerLoop));
+    Serial.println(String(cyclesPerRev) + " : " + String(currentSector) + " : " + String(cyclesSinceRevStart) + " : " + String(currentCycleCnt)  + " : " + String(lastCycleCnt) + " : " + String(revs) + " : " + " :: " + String(cyclesPerLoop) + " : " + String(maxCyclesPerLoop));
     /*
     int i;
     for(i=0; i<(NOF_LEDS * LED_DATA_SIZE); i++)
@@ -324,8 +334,8 @@ void loop() {
 
   //--------
     
-  leddata[head * 4 + 2] = 0X10;
-  leddata[tail * 4 + 2] = 0X00;
+//  leddata[head * 4 + 2] = 0X10;
+//  leddata[tail * 4 + 2] = 0X00;
 
   uint8_t preamble[] = {0, 0, 0, 0};
 
