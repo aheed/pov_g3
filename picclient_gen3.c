@@ -17,13 +17,15 @@ $ ./picg3 <server ip> test_photo.bmp
 #define MAX_BRIGHTNESS 64
 
 static uint8_t brightness = MAX_BRIGHTNESS;
+static uint32_t rotation = 950; // Default to make rotation look good on fan
 
 static uint8_t leddata[POV_FRAME_SIZE] = {0};
 static uint8_t leddata2[POV_FRAME_SIZE] = {0}; //For debug only
 
 typedef enum ArgParseState {
 	APS_INITIAL,
-	APS_BRIGHTNESS
+	APS_BRIGHTNESS,
+	APS_ROTATION
 } ArgParseState;
 
 ///////////////////////////////////////////////
@@ -53,6 +55,13 @@ int main(int argc, char *argv[]) {
     	aps = APS_INITIAL;
     	printf("brightness=%d\n", brightness);
     }  	 
+    
+    if(aps == APS_ROTATION)
+    {
+    	rotation = atoi(argv[i]);
+    	aps = APS_INITIAL;
+    	printf("rotation=%d\n", rotation);
+    }
   	 
     if(argv[i][0] == 'g')
     {
@@ -74,6 +83,11 @@ int main(int argc, char *argv[]) {
     if(!strcmp(argv[i], "-b"))
     {
       aps = APS_BRIGHTNESS;
+    }
+    
+    if(!strcmp(argv[i], "-r"))
+    {
+      aps = APS_ROTATION;
     }
   }
 
@@ -105,7 +119,8 @@ int main(int argc, char *argv[]) {
                        NOF_SECTORS,
                        NOF_LEDS,
                        povledRadius,
-                       gamma))
+                       gamma,
+                       rotation))
   {
     printf("failed to init\n");
     return 2;

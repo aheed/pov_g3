@@ -227,7 +227,7 @@ void RenderArea::paintEvent(QPaintEvent * /* event */)
 
             for(i=0; i<NOF_LEDS; i++)
             {
-                startAng = aLen * sector;
+                startAng = -aLen * sector;
                 if(povledRadius[i] < 0)
                 {
                     startAng += 5760 / 2; //Add 180 degrees

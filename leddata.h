@@ -24,7 +24,8 @@ int LDInitFromBmpData(char * const pBmpBuf,
                   const int nofSectors,
                   const int nofLeds,
                   const int *ledRadiusArray,
-                  const int gamma);
+                  const int gamma,
+                  const int rotation); // 1/16 degrees clockwise
 
 void LDgetLedData(const int nofSectors,
                   const int nofLeds,

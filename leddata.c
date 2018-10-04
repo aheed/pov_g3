@@ -213,7 +213,8 @@ int LDInitFromBmpData(char * const pBmpBuf,
                   const int nofSectors,
                   const int nofLeds,
                   const int *ledRadiusArray,
-                  const int gamma)
+                  const int gamma,
+                  const int rotation)
 {
   int i, x, y, pixelvalue;
   unsigned char* pCacheChar;
@@ -321,7 +322,7 @@ int LDInitFromBmpData(char * const pBmpBuf,
 
   for(sector=0; sector<nofSectors; sector++)
   {
-    startAng = aLen * sector + aLen/2;
+    startAng = aLen * sector + rotation + aLen/2;
     startAngRad = ((double)startAng / 5760) * 2 * MYPI;
 
     for(i=0; i<nofLeds; i++)
@@ -478,7 +479,7 @@ int LDInitFromBmpData(char * const pBmpBuf,
   //for(sector=0; sector<1; sector++) //TEMP
   {
     
-    startAng = aLen * sector + aLen/2;
+    startAng = -aLen * sector + rotation + aLen/2;
     startAngRad = ((double)startAng / 5760) * 2 * MYPI;
     
     double cosAngle= cos((double)startAngRad);
@@ -592,7 +593,8 @@ int LDInitFromBmp(const char * const pszFileName,
                     nofSectors,
                     nofLeds,
                     ledRadiusArray,
-                    gamma);
+                    gamma,
+                    0);
 }
 
 ///////////////////////////////////////////////////////////////
