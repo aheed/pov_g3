@@ -51,12 +51,16 @@ void LDgetLedDataFromBmpData3(const char * const pBmpBuf,
                              const int yflip,
                              const int gamma);
 
-// Uses weighted average of several pixels                             
+// Uses weighted average of several pixels
+// startLed: index of first lit LED
+// endLed:   index of last lit LED
 void LDgetLedDataFromBmpData4(const char * const pBmpBuf,
                              const unsigned char brightness,
                              char * const pLeddataOut,
                              const int yflip,
-                             const int gamma);
+                             const int gamma,
+                             const int startLed,
+                             const int endLed);
 
 void LDsetLedDataBlack(const int nofSectors,
                        const int nofLeds,

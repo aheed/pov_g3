@@ -18,8 +18,11 @@ new algo, weighted pixel influence
     more tangential reach for leds far from the centre
 
 
-issues:
-Some kind of geometry problem. Both with algo3 and algo4 but different !?
-  Only problem with non-square pic.
+sketch:
+
+
+hw:
+
+
 
 

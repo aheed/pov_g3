@@ -25,7 +25,9 @@ static uint8_t leddata2[POV_FRAME_SIZE] = {0}; //For debug only
 typedef enum ArgParseState {
 	APS_INITIAL,
 	APS_BRIGHTNESS,
-	APS_ROTATION
+	APS_ROTATION,
+	APS_STARTLED,
+	APS_ENDLED
 } ArgParseState;
 
 ///////////////////////////////////////////////
@@ -37,6 +39,8 @@ int main(int argc, char *argv[]) {
   int i;
   int gamma = 0;
   int algo = 3;
+  int startLed = 0;
+  int endLed = 1000;
 
   if(argc < 3)
   {
@@ -61,6 +65,20 @@ int main(int argc, char *argv[]) {
     	rotation = atoi(argv[i]);
     	aps = APS_INITIAL;
     	printf("rotation=%d\n", rotation);
+    }
+    
+    if(aps == APS_STARTLED)
+    {
+    	startLed = atoi(argv[i]);
+    	aps = APS_INITIAL;
+    	printf("startLed=%d\n", startLed);
+    }
+    
+    if(aps == APS_ENDLED)
+    {
+    	endLed = atoi(argv[i]);
+    	aps = APS_INITIAL;
+    	printf("endLed=%d\n", endLed);
     }
   	 
     if(argv[i][0] == 'g')
@@ -88,6 +106,16 @@ int main(int argc, char *argv[]) {
     if(!strcmp(argv[i], "-r"))
     {
       aps = APS_ROTATION;
+    }
+    
+    if(!strcmp(argv[i], "-s"))
+    {
+      aps = APS_STARTLED;
+    }
+    
+    if(!strcmp(argv[i], "-e"))
+    {
+      aps = APS_ENDLED;
     }
   }
 
@@ -159,7 +187,9 @@ int main(int argc, char *argv[]) {
                               brightness,
                               leddata,
                               0,
-                              gamma);
+                              gamma,
+                              startLed,
+                              endLed);
    }
 
 

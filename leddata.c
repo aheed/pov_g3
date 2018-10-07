@@ -719,14 +719,16 @@ void LDgetLedDataFromBmpData4(const char * const pBmpBuf,
                              const unsigned char brightness,
                              char * const pLeddataOut,
                              const int yflip,
-                             const int gamma)
+                             const int gamma,
+                             const int startLed,
+                             const int endLed)
 {
   unsigned char* pLed;
 
   int sector, led;
   int x, y, yflipped; //bmp coordinates
   int pixelvalue;
-  int sectorLedIndex;
+  int sectorLedIndex = 0;
   int ledvalue;
   struct LDSectorLedAreaColor *pLedAvg;
   
@@ -739,54 +741,70 @@ void LDgetLedDataFromBmpData4(const char * const pBmpBuf,
 
   pLed = pLeddataOut;
 
-  for(sectorLedIndex = 0; sectorLedIndex < (theLDCache.nofSectors * theLDCache.nofLeds); sectorLedIndex++)
+
+  //for(sectorLedIndex = 0; sectorLedIndex < (theLDCache.nofSectors * theLDCache.nofLeds); )
+  for(sector = 0; sector < theLDCache.nofSectors; sector++)
   {
-  	
-  	 double bluevalue = 0;
-    double greenvalue = 0;
-    double redvalue = 0;
-        
-    *pLed++ = 0xFF; //Header
-    
-    struct LDPixelWeight* pWeight = &theLDCache.pPixelWeights[sectorLedIndex * (MAX_INPUT_PIXELS_PER_SECTORLED+1)];
-    
-    while(pWeight->weight > 0.0)
-    {
-    	
-    	if(sectorLedIndex == 0)
-    	{
- //   	  printf("[%d, %d] %f    0x%x\n", pWeight->pixelx, pWeight->pixely, pWeight->weight, (long int)pWeight); //TEMP
-    	}
-    	    	
-      pixelvalue = GetPixel(&theLDCache.bmh, pBmpBuf, pWeight->pixelx, pWeight->pixely);
-      
-      bluevalue  += ((pixelvalue & 0x00FF0000) >> 16) * pWeight->weight;
-      greenvalue += ((pixelvalue & 0x0000FF00) >> 8) * pWeight->weight;
-      redvalue   += (pixelvalue & 0x000000FF) * pWeight->weight;
-    	
-    	pWeight++;
-    }
-    
-    Q_ASSERT(round(bluevalue) < 256);
-    Q_ASSERT(round(greenvalue) < 256);
-    Q_ASSERT(round(redvalue) < 256);
-    
-    // Gamma correction and brightness adjustment
-    if(gamma)
-    {    	
-      *pLed++ = (theLDCache.gammaLUT[(int)round(bluevalue)] * brightness) / 255;
-      *pLed++ = (theLDCache.gammaLUT[(int)round(greenvalue)] * brightness) / 255;
-      *pLed++ = (theLDCache.gammaLUT[(int)round(redvalue)] * brightness) / 255;
-    }
-    else
-    {
-      *pLed++ = ((int)round(bluevalue) * brightness) / 255;
-      *pLed++ = ((int)round(greenvalue) * brightness) / 255;
-      *pLed++ = ((int)round(redvalue) * brightness) / 255;
-    }
-    
-  }
-    
+	  for(led = 0; led < theLDCache.nofLeds; led++, sectorLedIndex++) 
+	  {
+	  	
+	  	 double bluevalue = 0;
+	    double greenvalue = 0;
+	    double redvalue = 0;
+	    	        
+	    *pLed++ = 0xFF; //Header
+	    
+	    struct LDPixelWeight* pWeight = &theLDCache.pPixelWeights[sectorLedIndex * (MAX_INPUT_PIXELS_PER_SECTORLED+1)];
+	    
+	    if( (led >= startLed) && (led <= endLed))
+	    { 
+	    	
+		    while(pWeight->weight > 0.0)
+		    {
+		    	
+		    	/*if(sectorLedIndex == 0)
+		    	{
+		 //   	  printf("[%d, %d] %f    0x%x\n", pWeight->pixelx, pWeight->pixely, pWeight->weight, (long int)pWeight); //TEMP
+		    	}*/
+		    	
+		    	   	
+		      pixelvalue = GetPixel(&theLDCache.bmh, pBmpBuf, pWeight->pixelx, pWeight->pixely);
+		      
+		      bluevalue  += ((pixelvalue & 0x00FF0000) >> 16) * pWeight->weight;
+		      greenvalue += ((pixelvalue & 0x0000FF00) >> 8) * pWeight->weight;
+		      redvalue   += (pixelvalue & 0x000000FF) * pWeight->weight;
+		      
+		    	
+		    	pWeight++;
+		    }
+	    }
+	    else
+	    {
+      	bluevalue = 0;
+      	greenvalue = 0;
+      	redvalue=0;
+	    }
+	    
+	    Q_ASSERT(round(bluevalue) < 256);
+	    Q_ASSERT(round(greenvalue) < 256);
+	    Q_ASSERT(round(redvalue) < 256);
+	    
+	    // Gamma correction and brightness adjustment
+	    if(gamma)
+	    {    	
+	      *pLed++ = (theLDCache.gammaLUT[(int)round(bluevalue)] * brightness) / 255;
+	      *pLed++ = (theLDCache.gammaLUT[(int)round(greenvalue)] * brightness) / 255;
+	      *pLed++ = (theLDCache.gammaLUT[(int)round(redvalue)] * brightness) / 255;
+	    }
+	    else
+	    {
+	      *pLed++ = ((int)round(bluevalue) * brightness) / 255;
+	      *pLed++ = ((int)round(greenvalue) * brightness) / 255;
+	      *pLed++ = ((int)round(redvalue) * brightness) / 255;
+	    }
+	    
+	  }
+  }  
 }
                              
                              

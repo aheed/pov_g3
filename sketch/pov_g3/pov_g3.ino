@@ -61,6 +61,8 @@ volatile uint32_t cyclesPerRev = 1000;
 volatile uint32_t lastCycleCnt = 0;
 volatile uint32_t revs = 0;
 
+int lastSector = 0;
+
 WiFiServer server(LDPORT);
 
 void blink() {
@@ -339,10 +341,14 @@ void loop() {
 
   uint8_t preamble[] = {0, 0, 0, 0};
 
-  SPI.writeBytes(preamble, 4); // 4 zero bytes preamble
-  //SPI.writeBytes(leddata, NOF_LEDS * 4);
-  SPI.writeBytes(leddata + currentSector * NOF_LEDS * LED_DATA_SIZE,  //pointer arithmetic
-                 NOF_LEDS * LED_DATA_SIZE);
+  if(currentSector != lastSector)
+  {
+    SPI.writeBytes(preamble, 4); // 4 zero bytes preamble
+    //SPI.writeBytes(leddata, NOF_LEDS * 4);
+    SPI.writeBytes(leddata + currentSector * NOF_LEDS * LED_DATA_SIZE,  //pointer arithmetic
+                   NOF_LEDS * LED_DATA_SIZE);
+  }
+  lastSector = currentSector;
 
   /*
   SPI.writeBytes(leddata, (NOF_LEDS+1) * 4);
