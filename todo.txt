@@ -20,9 +20,15 @@ new algo, weighted pixel influence
 
 sketch:
 
-
 hw:
+accelerometer for monitoring balance?
 
+other:
+Try using ImageMagick to gamma-correct pics in a pre-process step before uploading
 
-
+ 
+----------------
+Typical cycles per rev (at highest fan speed (3)):
+12239590 with fan blades
+10500544 without fan blades
 

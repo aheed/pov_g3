@@ -1,9 +1,4 @@
-// Simple strand test for Adafruit Dot Star RGB LED strip.
-// This is a basic diagnostic tool, NOT a graphics demo...helps confirm
-// correct wiring and tests each pixel's ability to display red, green
-// and blue and to forward data down the line.  By limiting the number
-// and color of LEDs, it's reasonably safe to power a couple meters off
-// the Arduino's 5V pin.  DON'T try that with other code!
+#include <lwip/def.h>
 
 //#include <Adafruit_DotStar.h>
 // Because conditional #includes don't work w/Arduino sketches...
@@ -34,22 +29,17 @@ const char* password = MYPWD;
 #define LED_OFF (HIGH)
 #define INTERRUPT_PIN 4
 
-//#define DEBUG_POV_SERVER
+#define DEBUG_POV_SERIAL(x) Serial.println(x)
+//#define DEBUG_POV_SERVER(x) DEBUG_POV_SERIAL(x) 
+#define DEBUG_POV_SERVER(x)
+
 #define SERVER_TIMEOUT 5000 //ms to wait for any server status change
 
 #define DEBOUNCE_MIN_REV_CYCLES 5000000
 
 /*
-//Adafruit_DotStar strip = Adafruit_DotStar(
-//  NUMPIXELS, DATAPIN, CLOCKPIN, DOTSTAR_BRG);
-// The last parameter is optional -- this is the color data order of the
-// DotStar strip, which has changed over time in different production runs.
-// Your code just uses R,G,B colors, the library then reassigns as needed.
-// Default is DOTSTAR_BRG, so change this if you have an earlier strip.
-
 // Hardware SPI is a little faster, but must be wired to specific pins
 // (Arduino Uno = pin 11 for data, 13 for clock, other boards are different).
-//Adafruit_DotStar strip = Adafruit_DotStar(NUMPIXELS, DOTSTAR_BRG);
 */
 
 //#define LEDDATASIZE (NUMSECTORS * (NUMPIXELS + 1) * 4)
@@ -94,7 +84,17 @@ typedef enum SERVERSTATE
    SST_WAIT_CLOSE
 } SERVERSTATE;
 
+typedef struct
+{
+  uint32_t cyclesPerRev;
+  uint32_t dbg;
+} PovDebugInfo;
+
 SERVERSTATE servstate =  SST_IDLE;
+char response[LD_ACK_SIZE] = {LD_ACK_CHAR};
+PovDebugInfo povDbg;
+char *pResponse = response;
+size_t responseSize = LD_ACK_SIZE;
 unsigned long lastStatusChange;
 WiFiClient  currentClient;
 int totalbytesread;
@@ -109,9 +109,7 @@ void handleServer()
       return;
     }
 
-#ifdef DEBUG_POV_SERVER
-    Serial.println("New client");
-#endif
+    DEBUG_POV_SERVER("New client");
 
     currentClient = client;
     totalbytesread = 0;
@@ -135,23 +133,31 @@ void handleServer()
                          leddata + totalbytesread,  //pointer arithmetic
                          POV_FRAME_SIZE - totalbytesread);
         totalbytesread += bytesread;
-        
-#ifdef DEBUG_POV_SERVER    
-        //Serial.println("Got " + String(bytesread) + " bytes");
-#endif
     
         if(bytesread)
-        {
-#ifdef DEBUG_POV_SERVER
-          Serial.println("Bytes read: " + String(totalbytesread) + "  Expected bytes:" + String(POV_FRAME_SIZE));
-#endif                        
+        {                   
+          DEBUG_POV_SERVER("Bytes rx: " + String(totalbytesread) + "  Expected bytes:" + String(POV_FRAME_SIZE));
           if(totalbytesread == POV_FRAME_SIZE)
           {
-#ifdef DEBUG_POV_SERVER
-            Serial.println("Got frame!");
-#endif               
+            DEBUG_POV_SERVER("Got frame!");          
             currentClient.flush();
             servstate = SST_RESPONDING;
+            pResponse = response;
+            responseSize = LD_ACK_SIZE;
+          }
+          else if((totalbytesread == 1) && (leddata[0] != 0xFF))
+          {
+            // Received data does not look like LED data.
+            // Respond with debug info.
+            DEBUG_POV_SERVER("Got report request");
+            servstate = SST_RESPONDING;
+            povDbg.cyclesPerRev = htonl(cyclesPerRev);
+            povDbg.dbg = htonl(4711);
+            pResponse = (char*)&povDbg;
+            responseSize = sizeof(povDbg);            
+
+            // Restore first byte of LED data
+            leddata[0] = 0xFF;
           }
 
           lastStatusChange = millis();
@@ -167,12 +173,10 @@ void handleServer()
 
     case SST_RESPONDING:
       {
-      char response[LD_ACK_SIZE] = {LD_ACK_CHAR};
-      if(currentClient.write(response, LD_ACK_SIZE) < 0)
+      
+      if(currentClient.write(pResponse, responseSize) < 0)
       {
-#ifdef DEBUG_POV_SERVER
-        Serial.println("failed to send ACK");
-#endif
+        DEBUG_POV_SERVER("failed to tx");
       }
       else
       {
@@ -199,9 +203,7 @@ void handleServer()
   }//connected
 
   if (!keepCurrentClient) {
-#ifdef DEBUG_POV_SERVER    
-    Serial.println("Closing connection to client");
-#endif    
+    DEBUG_POV_SERVER("Closing connection to client");
     currentClient = WiFiClient();
     servstate = SST_IDLE;
   }
@@ -269,25 +271,14 @@ void setup() {
   
 }
 
-// Runs 10 LEDs at a time along strip, cycling through red, green and blue.
-// This requires about 200 mA for all the 'on' pixels + 1 mA per 'off' pixel.
-
-int      head  = 0, tail = -10; // Index of first 'on' and 'off' pixels
-uint32_t color = 0xFF0000;      // 'On' color (starts red)
-
 
 int loopcnt = 0;
 
 uint32_t lastLoopCycleCnt, newLoopCycleCnt, cyclesPerLoop, maxCyclesPerLoop;
 
+///////////////////////////////////////////////////////
+///////////////////////////////////////////////////////
 void loop() {
-
-  /*
-  strip.setPixelColor(head, color); // 'On' pixel at head
-  strip.setPixelColor(tail, 0);     // 'Off' pixel at tail
-  strip.show();                     // Refresh strip
-  delay(20);                        // Pause 20 milliseconds (~50 FPS)
-  */
 
 
 //  delay(5);
@@ -310,16 +301,10 @@ void loop() {
   uint32_t currentCycleCnt = ESP.getCycleCount();
   uint32_t cyclesSinceRevStart = currentCycleCnt - lastCycleCnt;
   int currentSector =  ((cyclesSinceRevStart * NOF_SECTORS) / cyclesPerRev) % NOF_SECTORS;
-  /*int currentSector =  (((cyclesSinceRevStart/100) * NOF_SECTORS) / (cyclesPerRev/100));
-  if(currentSector >= NOF_SECTORS)
-  {
-    // avoid buffer overrun
-    currentSector = NOF_SECTORS - 1;
-  }*/
-
+  
   if((loopcnt % 1000) == 0)
   {
-    Serial.println(String(cyclesPerRev) + " : " + String(currentSector) + " : " + String(cyclesSinceRevStart) + " : " + String(currentCycleCnt)  + " : " + String(lastCycleCnt) + " : " + String(revs) + " : " + " :: " + String(cyclesPerLoop) + " : " + String(maxCyclesPerLoop));
+    DEBUG_POV_SERIAL(String(cyclesPerRev) + " : " + String(currentSector) + " : " + String(cyclesSinceRevStart) + " : " + String(currentCycleCnt)  + " : " + String(lastCycleCnt) + " : " + String(revs) + " : " + " :: " + String(cyclesPerLoop) + " : " + String(maxCyclesPerLoop));
     /*
     int i;
     for(i=0; i<(NOF_LEDS * LED_DATA_SIZE); i++)
@@ -333,11 +318,6 @@ void loop() {
     maxCyclesPerLoop = 0;
   }
 
-
-  //--------
-    
-//  leddata[head * 4 + 2] = 0X10;
-//  leddata[tail * 4 + 2] = 0X00;
 
   uint8_t preamble[] = {0, 0, 0, 0};
 
@@ -353,20 +333,6 @@ void loop() {
   /*
   SPI.writeBytes(leddata, (NOF_LEDS+1) * 4);
   */
-
-  //--------
-
-  if(++head >= NOF_LEDS) {         // Increment head index.  Off end of strip?
-    head = 0;                       //  Yes, reset head index to start
-    if((color >>= 8) == 0)          //  Next color (R->G->B) ... past blue now?
-      color = 0xFF0000;             //   Yes, reset to red
-
-    color &= 0xFF0000;
-  }
-  if(++tail >= NOF_LEDS)
-  {
-    tail = 0; // Increment, reset tail index
-  }
 
   loopcnt++;
 
