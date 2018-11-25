@@ -11,20 +11,32 @@ end output with newline
 configurable zoom
 change to clockwise
 
+Video Client:
+No-scaling mode to optimize?
+
 new algo, weighted pixel influence
   variable sector-led-combo area of pixel influence size
     square l = square( max(ledradius * factor1, ledsectorradius * factor2))
   variable sector-led-combo area of pixel influence shape
     more tangential reach for leds far from the centre
 
+Implement use of yflip in LDgetLedDataFromBmpData4
 
 sketch:
 
 hw:
 accelerometer for monitoring balance?
 
+web based simulator:
+  make basic canvas based redraw function
+  Add to repo - combine localscribble/signalrsample/simple with localscribble/signalrsample/syncserver
+  
+monpov:
+test against sketch*
+
 other:
 Try using ImageMagick to gamma-correct pics in a pre-process step before uploading
+
 
  
 ----------------

@@ -29,6 +29,7 @@ const char* password = MYPWD;
 #define LED_OFF (HIGH)
 #define INTERRUPT_PIN 4
 
+#define RESPOND
 #define DEBUG_POV_SERIAL(x) Serial.println(x)
 //#define DEBUG_POV_SERVER(x) DEBUG_POV_SERIAL(x) 
 #define DEBUG_POV_SERVER(x)
@@ -173,27 +174,31 @@ void handleServer()
 
     case SST_RESPONDING:
       {
-      
+
+#ifdef RESPOND      
       if(currentClient.write(pResponse, responseSize) < 0)
       {
         DEBUG_POV_SERVER("failed to tx");
       }
       else
+#endif      
       {
         keepCurrentClient = true;
         callYield = true;
       }
-      servstate = SST_WAIT_CLOSE;
+
+      servstate = SST_CONNECTED;
+      totalbytesread = 0;
       }
       break;
       
-    case SST_WAIT_CLOSE:
+    /*case SST_WAIT_CLOSE:
       // Wait for client to close the connection
       if (millis() - lastStatusChange <= SERVER_TIMEOUT) {
         keepCurrentClient = true;
         callYield = true;
       }
-      break;
+      break;*/
 
     default:
       //should not happen
