@@ -1,7 +1,12 @@
 namespace povdata
 {
-    class PovFramePayload
+    public class PovFramePayload
     {
-        public byte[] leddata = new byte[Povgeometry.POV_FRAME_SIZE];
+        public byte[] leddata;
+
+        public PovFramePayload()
+        {
+            leddata = new byte[Povgeometry.POV_FRAME_SIZE];
+        }
     }
 }

@@ -28,9 +28,12 @@ hw:
 accelerometer for monitoring balance?
 
 web based simulator:
-  Use correct class as argument SignalR method "UpdatePOV". Make the byte array readable as an array of numbers on the client side.
+  Use correct class as argument SignalR method "UpdatePOV". Make the byte array readable as an array of numbers on the client side.*
   Use MessagePack (instead of the default json format) to reduce data size on "UpdatePOV".
-  make basic canvas based redraw function
+  make basic canvas based redraw function*
+  Make the canvas resizeable (change with window size)
+  Black background*
+  General cleanup
   
   
 monpov:
@@ -45,4 +48,14 @@ Try using ImageMagick to gamma-correct pics in a pre-process step before uploadi
 Typical cycles per rev (at highest fan speed (3)):
 12239590 with fan blades
 10500544 without fan blades
+
+---------------------------
+Problem:
+povsim fails when using the file 1200px-Breathe-face-smile.svg.bmp
+example: 
+./picg3 127.0.0.1 1200px-Breathe-face-smile.svg.bmp  -a4 -b 64 g
+
+No problem with other files!!
+Solved: It was a signalR message buffer size limitation. Fixed by configuring the hub with a larger message buffer.
+
 

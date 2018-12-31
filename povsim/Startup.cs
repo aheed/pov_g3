@@ -35,7 +35,11 @@ namespace PovSim
             app.UseStaticFiles();
             app.UseSignalR(routes =>
             {
-                routes.MapHub<PovSimHub>("/povsim");
+                routes.MapHub<PovSimHub>("/povsim", options =>
+                {
+                    // 128Kb message buffer
+                    options.ApplicationMaxBufferSize = 128 * 1024;
+                });
             });
 
         }

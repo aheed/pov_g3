@@ -1,5 +1,6 @@
 "use strict";
 
+
 var connection = new signalR.HubConnectionBuilder().withUrl("/povsim").build();
 
 connection.on("ReceiveMessage", function (user, message) {
@@ -10,12 +11,26 @@ connection.on("ReceiveMessage", function (user, message) {
     document.getElementById("messagesList").appendChild(li);
 });
 
-connection.on("UpdatePOV", function (message) {
+/*connection.on("Test2", function (message) {
     var msg = message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    var encodedMsg = "got POV update: " + msg;
+    var encodedMsg = "got Test2: " + msg;
     var li = document.createElement("li");
     li.textContent = encodedMsg;
     document.getElementById("messagesList").appendChild(li);
+});*/
+
+connection.on("UpdatePOV", function (povd) {
+    var encodedMsg = "got UpdatePOV " +
+      povd.nofSectors.toString() + " " +
+      povd.nofLeds.toString() + " " +
+      povd.ledColors.length;
+    /*var li = document.createElement("li");
+    li.textContent = encodedMsg;
+    document.getElementById("messagesList").appendChild(li);*/
+    console.log(encodedMsg);
+
+    let canvasElem = document.getElementById("myCanvas");
+    drawpov(canvasElem, povd);
 });
 
 connection.start().catch(function (err) {

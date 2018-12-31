@@ -13,11 +13,18 @@ namespace PovSim.Hubs
         }
 
 
-        [HubMethodName("UpdatePovData")]
-        public async Task ReceivePovData(string tmp)
+        /*[HubMethodName("Test")]
+        public async Task Test(string tmp)
         {
             Console.WriteLine("hub: sending update");
-            await Clients.All.SendAsync("UpdatePOV", tmp);
+            await Clients.All.SendAsync("Test2", tmp);
+        }*/
+
+        [HubMethodName("UpdatePovData")]
+        public async Task UpdatePovData(HubPovData hubPovData)
+        {
+            Console.WriteLine("hub: sending update");
+            await Clients.All.SendAsync("UpdatePOV", hubPovData);
         }
     }
 }

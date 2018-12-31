@@ -7,6 +7,7 @@ namespace PovSim
 {
     public class PovDataUpdateEventArgs {
         public string tmp;
+        public povdata.PovFramePayload payload;
     }
 
     public class SynchronousSocketListener {  
@@ -116,7 +117,7 @@ namespace PovSim
                     {
                         // Got a complete frame
                         // Notify any observer
-                        OnPovDataUpdate(new PovDataUpdateEventArgs {tmp = "got something\n"});
+                        OnPovDataUpdate(new PovDataUpdateEventArgs {tmp = "got something\n", payload=recPayload});
                     }
 
                     handler.Shutdown(SocketShutdown.Both);  

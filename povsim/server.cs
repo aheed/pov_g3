@@ -19,16 +19,23 @@ Received LED data is passed on to the hub.
         {
             Console.WriteLine("SignalR client: Received this message: {0}", e.tmp);
 
+            Console.WriteLine("{0}", e.payload.leddata.Length);
+            HubPovData hubpd = new HubPovData();
+            hubpd.Init(e.payload);
+
             try
             {
                 Console.WriteLine("SignalR client: sending UpdatePovData to Hub");
+                /*await hubConn.InvokeAsync("Test", 
+                    e.tmp);*/
                 await hubConn.InvokeAsync("UpdatePovData", 
-                    "fakePovData");
+                    hubpd);
             }
             catch (Exception ex)
             {        
                 Console.WriteLine("SignalR client: failed to send to Hub");
                 Console.WriteLine(ex.Message);                
+                Console.WriteLine(ex.StackTrace);
             }
 
         }
@@ -68,9 +75,15 @@ Received LED data is passed on to the hub.
                 Console.WriteLine(newMessage);
             });
 
-            hubConn.On<string>("UpdatePOV", (message) =>
+            /*hubConn.On<string>("Test2", (message) =>
             {
-                var newMessage = $"SignalR Client: UpdatePOV : {message}";
+                var newMessage = $"SignalR Client: Test2 : {message}";
+                Console.WriteLine(newMessage);
+            });*/
+
+            hubConn.On<HubPovData>("UpdatePOV", (povd) =>
+            {
+                var newMessage = $"SignalR Client: UpdatePOV : {povd.nofSectors} {povd.nofLeds} {povd.ledColors.Length}";
                 Console.WriteLine(newMessage);
             });
 

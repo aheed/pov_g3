@@ -11,7 +11,7 @@ namespace povdata
         public const int POV_FRAME_SIZE = (NOF_SECTORS * NOF_LEDS * LED_DATA_SIZE);
 
 
-        public readonly int[] povledRadius = 
+        public static readonly int[] povledRadius = 
         {
         -2205,
         -2135,
