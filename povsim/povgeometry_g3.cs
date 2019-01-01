@@ -5,7 +5,7 @@ namespace povdata
 
     class Povgeometry
     {
-        public const int NOF_SECTORS = 120;
+        public const int NOF_SECTORS = 180;
         public const int NOF_LEDS = 64; //32
         public const int LED_DATA_SIZE = 4;
         public const int POV_FRAME_SIZE = (NOF_SECTORS * NOF_LEDS * LED_DATA_SIZE);

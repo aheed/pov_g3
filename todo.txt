@@ -7,9 +7,10 @@ change to clockwise
 
 Pic Client:
 parameterized intensity*
-end output with newline
+end output with newline*
 configurable zoom
-change to clockwise
+change to clockwise*
+update usage info
 
 Video Client:
 No-scaling mode to optimize?
@@ -34,6 +35,7 @@ web based simulator:
   Make the canvas resizeable (change with window size)
   Black background*
   General cleanup
+  dockerize
   
   
 monpov:
@@ -41,7 +43,7 @@ test against sketch*
 
 other:
 Try using ImageMagick to gamma-correct pics in a pre-process step before uploading
-
+Build script taking number of sectors as argument
 
  
 ----------------

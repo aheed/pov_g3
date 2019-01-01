@@ -13,7 +13,7 @@
 
 #define MAX_INPUT_PIXELS_PER_SECTORLED 1000
 #define LED_SIZE_FACTOR 1.0
-#define SECTOR_SIZE_FACTOR 1.3
+#define SECTOR_SIZE_FACTOR 0.7
 #define MAX_PIXEL_DISTANCE 20
 
 #ifndef MAX
@@ -732,7 +732,7 @@ void LDgetLedDataFromBmpData4(const char * const pBmpBuf,
   int ledvalue;
   struct LDSectorLedAreaColor *pLedAvg;
   
-  //printf("LDgetLedDataFromBmpData4\n");
+  printf("\nLDgetLedDataFromBmpData4 startLed:%d  endLed:%d\n", startLed, endLed);
   printf("\n");
 
   Q_ASSERT(theLDCache.pPixelToLedMap);

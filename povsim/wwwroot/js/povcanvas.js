@@ -33,7 +33,9 @@ function drawpov(canv, pov) {
     let radiusScale = (canv.height / 2) / pov.povledRadius[pov.nofLeds - 1];
     let aLen = 2 * Math.PI / pov.nofSectors; //rad
 
-    ctx.lineWidth = 3; //px
+    ctx.lineWidth = canv.width *0.007 ; //px
+    //ctx.lineCap='butt'; 
+
     console.log("pov.NOF_SECTORS: " + pov.nofSectors);
     for(let led=0; led < pov.nofLeds; led++)
     {
