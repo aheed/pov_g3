@@ -37,8 +37,8 @@ namespace PovSim
             {
                 routes.MapHub<PovSimHub>("/povsim", options =>
                 {
-                    // 128Kb message buffer
-                    options.ApplicationMaxBufferSize = 128 * 1024;
+                    // 256Kb message buffer
+                    options.ApplicationMaxBufferSize = 256 * 1024;
                 });
             });
 

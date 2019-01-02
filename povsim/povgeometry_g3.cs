@@ -5,14 +5,15 @@ namespace povdata
 
     class Povgeometry
     {
-        public const int NOF_SECTORS = 180;
-        public const int NOF_LEDS = 64; //32
+        public const int NOF_SECTORS = 320;
+        public const int NOF_LEDS = 32; //64
         public const int LED_DATA_SIZE = 4;
         public const int POV_FRAME_SIZE = (NOF_SECTORS * NOF_LEDS * LED_DATA_SIZE);
 
 
         public static readonly int[] povledRadius = 
         {
+    
         -2205,
         -2135,
         -2066,
@@ -45,6 +46,8 @@ namespace povdata
         -191,
         -122,
         -52,
+        
+        /*
         17,
         87,
         156,
@@ -76,7 +79,8 @@ namespace povdata
         1962,
         2031,
         2101,
-        2170
+        2170*/
+
         };        
     }
 }

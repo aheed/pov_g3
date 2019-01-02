@@ -34,7 +34,7 @@ web based simulator:
   make basic canvas based redraw function*
   Make the canvas resizeable (change with window size)
   Black background*
-  General cleanup
+  General cleanup*
   dockerize
   
   
@@ -44,6 +44,7 @@ test against sketch*
 other:
 Try using ImageMagick to gamma-correct pics in a pre-process step before uploading
 Build script taking number of sectors as argument
+Use half the number of leds, double the number of sectors*
 
  
 ----------------

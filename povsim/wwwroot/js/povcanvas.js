@@ -30,13 +30,16 @@ function drawpov(canv, pov) {
 
     let xc = canv.width / 2;
     let yc = canv.height / 2;
-    let radiusScale = (canv.height / 2) / pov.povledRadius[pov.nofLeds - 1];
+
+    let maxAbsLedRadius = Math.max(Math.abs(Math.max(...pov.povledRadius)), Math.abs(Math.min(...pov.povledRadius)))
+
+    let radiusScale = (canv.height / 2) / maxAbsLedRadius;
     let aLen = 2 * Math.PI / pov.nofSectors; //rad
 
-    ctx.lineWidth = canv.width *0.007 ; //px
+    ctx.lineWidth = canv.width *0.010 ; //px
     //ctx.lineCap='butt'; 
 
-    console.log("pov.NOF_SECTORS: " + pov.nofSectors);
+    //console.log("pov.NOF_SECTORS: " + pov.nofSectors);
     for(let led=0; led < pov.nofLeds; led++)
     {
         for(let sector=0; sector < pov.nofSectors; sector++)
@@ -53,7 +56,7 @@ function drawpov(canv, pov) {
             let ledIndex = sector * pov.nofLeds + led;
             let strokeColor = '#' + pov.ledColors[ledIndex].toString(16).padStart(6, '0');
             ctx.strokeStyle = strokeColor;
-            //console.log(strokeColor);
+            
             ctx.beginPath();
             ctx.arc(xc, yc, ledRadius * radiusScale, startAng, startAng + aLen);
             ctx.stroke();

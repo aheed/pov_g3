@@ -205,6 +205,39 @@ void LDsetLed(const int nofLeds,
 
 }
 
+
+int abs(int in)
+{
+  if(in < 0)
+  {
+    return -in;
+  }
+  else
+  {
+    return in;
+  }
+}
+
+///////////////////////////////////////////////////////////////
+//
+int getMaxAbsLedRadius(const int nofLeds,
+                  const int *ledRadiusArray)
+{
+  int i = 0;
+  int ret = abs(ledRadiusArray[0]);
+
+  for(i = 0; i < nofLeds; ++i)
+  {
+    int cand = abs(ledRadiusArray[i]);
+    if(cand > ret)
+    {
+      ret = cand;
+    }
+  }
+
+  return ret;
+}
+
 ///////////////////////////////////////////////////////////////
 //
 int LDInitFromBmpData(char * const pBmpBuf,
@@ -317,8 +350,8 @@ int LDInitFromBmpData(char * const pBmpBuf,
   // Set scale so the whole circular display fits in the square picture.
   // This means the corners of the picture are not visible
   // unless an offset is applied later.
-  maxx = 2 * ledRadiusArray[nofLeds-1];
-  maxy = 2 * ledRadiusArray[nofLeds-1];
+
+  maxx = maxy = 2 * getMaxAbsLedRadius(nofLeds, ledRadiusArray);
 
   for(sector=0; sector<nofSectors; sector++)
   {
@@ -498,11 +531,11 @@ int LDInitFromBmpData(char * const pBmpBuf,
     	// calculate coordinates of led-sector-combo centre
     	double lsxcoord = cosAngle * ledRadiusArray[led];
       double lsycoord = minusSinAngle * ledRadiusArray[led];
-      
+
       // convert to coords with origo in top left corner of image
       lsxcoord = lsxcoord + maxx / 2;
       lsycoord = lsycoord + maxy / 2;
-      
+
       // Get pixel coords at approximate centre of led-sector-combo
       ConvertPicCoordsToBmpCoordsTruncate(maxx, maxy, lsxcoord, lsycoord, &theLDCache.bmh, &bmpx, &bmpy);
       int bmpxmin = MAX(0, bmpx - MAX_PIXEL_DISTANCE);
@@ -511,7 +544,7 @@ int LDInitFromBmpData(char * const pBmpBuf,
       int bmpymax = MIN(theLDCache.bmh.Height - 1, bmpy + MAX_PIXEL_DISTANCE);
       
       int sectorledOffset = (sector * nofLeds + led) * (MAX_INPUT_PIXELS_PER_SECTORLED+1); 
-    	
+
       for(x = bmpxmin; x <= bmpxmax; x++)
 		{
     	  for(y = bmpymin; y <= bmpymax; y++)

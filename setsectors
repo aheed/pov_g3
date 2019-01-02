@@ -1,0 +1,5 @@
+#!/bin/bash
+
+find . -name povgeometry_g3.h | xargs sed -i "s/define NOF_SECTORS .*/define NOF_SECTORS $1/"
+find . -name povgeometry_g3.cs | xargs sed -i "s/int NOF_SECTORS = .*;/int NOF_SECTORS = $1;/"
+

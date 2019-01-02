@@ -31,8 +31,8 @@ const char* password = MYPWD;
 
 #define RESPOND
 #define DEBUG_POV_SERIAL(x) Serial.println(x)
-//#define DEBUG_POV_SERVER(x) DEBUG_POV_SERIAL(x) 
-#define DEBUG_POV_SERVER(x)
+#define DEBUG_POV_SERVER(x) DEBUG_POV_SERIAL(x) 
+//#define DEBUG_POV_SERVER(x)
 
 #define SERVER_TIMEOUT 5000 //ms to wait for any server status change
 
