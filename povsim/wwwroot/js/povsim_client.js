@@ -30,9 +30,15 @@ connection.on("UpdatePOV", function (povd) {
     document.getElementById("messagesList").appendChild(li);*/
     console.log(encodedMsg);
 
-    let canvasElem = document.getElementById("myCanvas");
+    let canvasElem = document.getElementById("povcanvas");
+    let svgElem = document.getElementById("povsvg");
     latestPovData = povd;
-    drawpov(canvasElem, povd);
+    //drawpov(canvasElem, povd);
+
+    //drawpov.call(document, canvasElem, povd);
+    //drawpovsvg.call(document, svgElem, povd);
+    drawpov.bind(this)(canvasElem, latestPovData);
+    drawpovsvg.bind(this)(svgElem, latestPovData);
 });
 
 connection.start().catch(function (err) {
@@ -52,14 +58,19 @@ document.getElementById("sendButton").addEventListener("click", function (event)
 
 function resizeHandler(evt) {
     this.console.log("yo, window resized!!!");
-    let canvasElem = document.getElementById("myCanvas");
+    let canvasElem = document.getElementById("povcanvas");
+    let svgElem = document.getElementById("povsvg");
 
     let evtObj = evt.srcElement || evt.currentTarget;
-    canvasElem.width = Math.min(evtObj.innerWidth, evtObj.innerHeight);
-    canvasElem.height = canvasElem.width; // keep it square
+    //canvasElem.width = Math.min(evtObj.innerWidth, evtObj.innerHeight) / 2;
+    //canvasElem.height = canvasElem.width; // keep it square
+    //svgElem.width = Math.min(evtObj.innerWidth, evtObj.innerHeight) / 2;
+    //svgElem.height = svgElem.width; // keep it square
+
     this.console.log("w:" + canvasElem.width + " h:" + canvasElem.height);
     if(latestPovData) {
-        drawpov(canvasElem, latestPovData);
+        drawpov.bind(this)(canvasElem, latestPovData);
+        drawpovsvg.bind(this)(svgElem, latestPovData);
     }
 }
 

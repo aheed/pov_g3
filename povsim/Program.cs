@@ -22,7 +22,7 @@ namespace PovSim
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
                 .UseStartup<Startup>()
-                .UseUrls("http://localhost:5201")
+                .UseUrls("http://*:5201")
                 ;
     }
 }

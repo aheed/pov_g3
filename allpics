@@ -7,7 +7,7 @@ do
 
 for i in $DIRECTORY/*.bmp; do
   echo $i
-  ./picg3 $1 $i -a4 -b 255 g 
+  ./picg3 $1 $i -a4 -b 64 g 
   sleep 3
 done
 

@@ -36,6 +36,7 @@ web based simulator:
   Black background*
   General cleanup*
   dockerize
+  svg based redraw function
   
   
 monpov:
