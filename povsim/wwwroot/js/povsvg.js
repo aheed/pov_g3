@@ -14,7 +14,6 @@ var cachedSvgWidth;
  */
 function drawpovsvg(svgElem, pov) {
 
-    //alert("halloooj");
     console.log("drawpovsvg");
 
     var bBox = svgElem.getBBox();
@@ -22,28 +21,44 @@ function drawpovsvg(svgElem, pov) {
     console.log('size', bBox.width + 'x' + bBox.height);
 
 
-    // Todo: Check if the geometry matches the cached svg collection.
-    //       Set arcElems to null if that is not the case.
+    // Check if the geometry matches the cached svg collection.
+    // Set arcElems to null if that is not the case.
+    if (cachedSvgHeight != svgElem.getAttribute("height")) {
+        cachedSvgHeight = svgElem.getAttribute("height");
+        arcElems = null;
+    }
 
-    cachedSvgHeight = svgElem.getAttribute("height");
-    cachedSvgWidth = svgElem.getAttribute("width");
+    if (cachedSvgWidth != svgElem.getAttribute("width")) {
+        cachedSvgWidth = svgElem.getAttribute("width");
+        arcElems = null;
+    }
+
+    if (cachedNofSectors != pov.nofSectors) {
+        cachedNofSectors = pov.nofSectors;
+        arcElems = null;
+    }
+
+    if (cachedNofLeds != pov.nofLeds) {
+        cachedNofLeds = pov.nofLeds;
+        arcElems = null;
+    }
 
     let xc = cachedSvgHeight / 2;
     let yc = cachedSvgWidth / 2;
-    //let radius = cachedSvgHeight /2;
 
-    arcElems = null; //TEMP!
 
     if(!arcElems)
     {
         console.log("drawpovsvg2");
+
+        // Clean up any old elements
+        while (svgElem.firstChild) {
+            svgElem.removeChild(svgElem.firstChild);
+        }
         arcElems = [];
 
-//        // Create svg top element
-//        let topElem = document.createElement('svg');
 
         // Create arc elements
-        
 
         let lastx;
         let lasty;
@@ -102,6 +117,20 @@ function drawpovsvg(svgElem, pov) {
 
             }
         }
+    }
+    else {
+        let elemIndex = 0;
+        for(let led=0; led < pov.nofLeds; led++)
+        {
+            for(let sector=0; sector < pov.nofSectors; sector++)
+            {
+                let ledIndex = sector * pov.nofLeds + led;
+                let strokeColor = '#' + pov.ledColors[ledIndex].toString(16).padStart(6, '0');
+                let arcElem = arcElems[elemIndex++];
+                arcElem.setAttribute("stroke", strokeColor);
+            }
+        }
+
     }
 }
 
