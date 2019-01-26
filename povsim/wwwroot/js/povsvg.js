@@ -70,7 +70,13 @@ function drawpovsvg(svgElem, pov) {
         lastx = xc + radius * Math.cos(angle - deltaAngle); //TEMP
         lasty = yc + radius * -Math.sin(angle - deltaAngle); //TEMP
 
-        let sizeFactor = 0.07;
+        //let sizeFactor = 0.07;
+        let maxAbsLedRadius = Math.max(Math.abs(Math.max(...pov.povledRadius)), Math.abs(Math.min(...pov.povledRadius)))
+        let radiusScale = (svgElem.getAttribute("height") / 2) / maxAbsLedRadius;
+        console.log(svgElem.getAttribute("height"));
+        console.log(radiusScale);
+
+        let strokeWidth = svgElem.getAttribute("width") *0.010 ; //px
 
         deltaAngle = Math.PI * 2 / pov.nofSectors;
 
@@ -82,7 +88,7 @@ function drawpovsvg(svgElem, pov) {
                 //startAng += Math.PI; //Add 180 degrees
                 ledRadius = -ledRadius;
             }
-            ledRadius *= sizeFactor;
+            ledRadius *= radiusScale;
 
             angle = Math.PI;
             lastx = xc + ledRadius * Math.cos(angle);
@@ -106,7 +112,7 @@ function drawpovsvg(svgElem, pov) {
 
                 newElem.setAttribute("d", d);
                 newElem.setAttribute("stroke", strokeColor);
-                newElem.setAttribute("stroke-width", "3");
+                newElem.setAttribute("stroke-width", strokeWidth);
 
                 svgElem.appendChild(newElem);
                 arcElems.push(newElem);

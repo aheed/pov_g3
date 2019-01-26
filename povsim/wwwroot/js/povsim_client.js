@@ -63,9 +63,15 @@ function resizeHandler(evt) {
 
     let evtObj = evt.srcElement || evt.currentTarget;
     //canvasElem.width = Math.min(evtObj.innerWidth, evtObj.innerHeight) / 2;
-    //canvasElem.height = canvasElem.width; // keep it square
+    let drawElemWidth = evtObj.innerWidth / 2 - 20; 
+
+    canvasElem.width = drawElemWidth;
+    canvasElem.height = drawElemWidth; // keep it square
+
     //svgElem.width = Math.min(evtObj.innerWidth, evtObj.innerHeight) / 2;
     //svgElem.height = svgElem.width; // keep it square
+    svgElem.setAttribute("width", drawElemWidth);
+    svgElem.setAttribute("height", drawElemWidth);
 
     this.console.log("w:" + canvasElem.width + " h:" + canvasElem.height);
     if(latestPovData) {
