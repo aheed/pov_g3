@@ -133,7 +133,9 @@ function drawpovsvg(svgElem, pov) {
                 let ledIndex = sector * pov.nofLeds + led;
                 let strokeColor = '#' + pov.ledColors[ledIndex].toString(16).padStart(6, '0');
                 let arcElem = arcElems[elemIndex++];
-                arcElem.setAttribute("stroke", strokeColor);
+                //arcElem.setAttribute("stroke", strokeColor);
+                arcElem.setAttribute('style', 'stroke:' + strokeColor);
+                
             }
         }
 

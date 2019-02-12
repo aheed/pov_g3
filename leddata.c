@@ -247,7 +247,8 @@ int LDInitFromBmpData(char * const pBmpBuf,
                   const int nofLeds,
                   const int *ledRadiusArray,
                   const int gamma,
-                  const int rotation)
+                  const int rotation,
+                  const int yflip)
 {
   int i, x, y, pixelvalue;
   unsigned char* pCacheChar;
@@ -531,6 +532,10 @@ int LDInitFromBmpData(char * const pBmpBuf,
     	// calculate coordinates of led-sector-combo centre
     	double lsxcoord = cosAngle * ledRadiusArray[led];
       double lsycoord = minusSinAngle * ledRadiusArray[led];
+      if(yflip)
+      {
+        lsycoord *= -1;
+      }
 
       // convert to coords with origo in top left corner of image
       lsxcoord = lsxcoord + maxx / 2;
@@ -546,9 +551,10 @@ int LDInitFromBmpData(char * const pBmpBuf,
       int sectorledOffset = (sector * nofLeds + led) * (MAX_INPUT_PIXELS_PER_SECTORLED+1); 
 
       for(x = bmpxmin; x <= bmpxmax; x++)
-		{
+		  {
     	  for(y = bmpymin; y <= bmpymax; y++)
     	  {
+
     		  // Get square distance r
            double rsq = SquareDistanceToPixel(maxx, maxy, lsxcoord, lsycoord, x, y, &theLDCache.bmh);
     		  
@@ -627,6 +633,7 @@ int LDInitFromBmp(const char * const pszFileName,
                     nofLeds,
                     ledRadiusArray,
                     gamma,
+                    0,
                     0);
 }
 
@@ -751,7 +758,6 @@ void LDgetLedDataFromBmpData3(const char * const pBmpBuf,
 void LDgetLedDataFromBmpData4(const char * const pBmpBuf,
                              const unsigned char brightness,
                              char * const pLeddataOut,
-                             const int yflip,
                              const int gamma,
                              const int startLed,
                              const int endLed)

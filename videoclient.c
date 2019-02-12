@@ -39,6 +39,7 @@ With gamma correction and limited brightness
 static uint8_t leddata[NOF_SECTORS * NOF_LEDS * 4] = {0};
 
 static uint32_t rotation = 950; // Default to make rotation look good on fan
+static uint8_t brightness = MAX_BRIGHTNESS;
 
 //-------------------------------------
 
@@ -64,6 +65,16 @@ void SaveFrame(AVFrame *pFrame, int width, int height, int iFrame) {
   fclose(pFile);
 }
 
+typedef enum ArgParseState {
+	APS_INITIAL,
+	APS_BRIGHTNESS,
+	APS_ROTATION,
+	APS_STARTLED,
+	APS_ENDLED
+} ArgParseState;
+
+///////////////////////////////////////////////
+//
 int main(int argc, char *argv[]) {
   // Initalizing these to NULL prevents segfaults!
   AVFormatContext   *pFormatCtx = NULL;
@@ -82,6 +93,11 @@ int main(int argc, char *argv[]) {
   struct timespec sleeper, dummy;
   int startLed = 0;
   int endLed = 1000;
+  int gamma = 0;
+  int algo = 3;
+  char *pszServer = NULL;
+  char *pszVideoFileName = NULL;
+  
 
   struct BITMAPHEADER bmh = {0};
 
@@ -89,19 +105,105 @@ int main(int argc, char *argv[]) {
     printf("Please provide a movie file\n");
     return -1;
   }
+  if(argc < 3)
+  {
+    printf("usage:\n%s <server ip> <video file> [-g]\ng: gamma correction\n", argv[0]);
+    return -1;
+  }
+
+  pszServer = argv[1];
+  pszVideoFileName = argv[2];
+
+  ArgParseState aps = APS_INITIAL;
+  for(i=3; i<argc; i++)
+  {
+    printf("arg %d:%s\n", i, argv[i]);
+    
+    if(aps == APS_BRIGHTNESS)
+    {
+    	brightness = atoi(argv[i]);
+    	aps = APS_INITIAL;
+    	printf("brightness=%d\n", brightness);
+    }  	 
+    
+    if(aps == APS_ROTATION)
+    {
+    	rotation = atoi(argv[i]);
+    	aps = APS_INITIAL;
+    	printf("rotation=%d\n", rotation);
+    }
+    
+    if(aps == APS_STARTLED)
+    {
+    	startLed = atoi(argv[i]);
+    	aps = APS_INITIAL;
+    	printf("startLed=%d\n", startLed);
+    }
+    
+    if(aps == APS_ENDLED)
+    {
+    	endLed = atoi(argv[i]);
+    	aps = APS_INITIAL;
+    	printf("endLed=%d\n", endLed);
+    }
+  	 
+    if(!strcmp(argv[i], "-g"))
+    {
+      gamma = 1;
+    }
+    
+    if(!strcmp(argv[i], "-a3"))
+    {
+      algo = 3;
+      printf("algo 3!!\n");
+    }
+    
+    if(!strcmp(argv[i], "-a4"))
+    {
+      algo = 4;
+      printf("algo 4!!\n");
+    }
+    
+    if(!strcmp(argv[i], "-b"))
+    {
+      aps = APS_BRIGHTNESS;
+    }
+    
+    if(!strcmp(argv[i], "-r"))
+    {
+      aps = APS_ROTATION;
+    }
+    
+    if(!strcmp(argv[i], "-s"))
+    {
+      aps = APS_STARTLED;
+    }
+    
+    if(!strcmp(argv[i], "-e"))
+    {
+      aps = APS_ENDLED;
+    }
+  }
+
   // Register all formats and codecs
   av_register_all();
   
   // Open video file
-  if(avformat_open_input(&pFormatCtx, argv[1], NULL, NULL)!=0)
-    return -1; // Couldn't open file
+  if(avformat_open_input(&pFormatCtx, pszVideoFileName, NULL, NULL)!=0)
+  {
+    fprintf(stderr, "Couldn't open file %s\n", pszVideoFileName);
+    return -1;
+  }
   
   // Retrieve stream information
   if(avformat_find_stream_info(pFormatCtx, NULL)<0)
-    return -1; // Couldn't find stream information
+  {
+    fprintf(stderr, "Couldn't find stream information\n");
+    return -1;
+  }
   
   // Dump information about file onto standard error
-  av_dump_format(pFormatCtx, 0, argv[1], 0);
+  av_dump_format(pFormatCtx, 0, pszVideoFileName, 0);
   
   // Find the first video stream
   videoStream=-1;
@@ -202,7 +304,8 @@ int main(int argc, char *argv[]) {
                   NOF_LEDS,
                   povledRadius,
                   1,
-                  rotation))
+                  rotation,
+                  1)) //yflip
            {
              fprintf(stderr, "Failed to init LED data\n");
              return 1;
@@ -223,16 +326,15 @@ int main(int argc, char *argv[]) {
         LDgetLedDataFromBmpData4(pFrameRGB->data[0],
                             MAX_BRIGHTNESS,
                             leddata,
-                            0, //yflip
-                            1, //gamma correction
+                            gamma,
                             startLed,
                              endLed);
 
         //Transmit LED data to POV server
         if(!connected)
         {
-          printf("Connecting 192.168.0.11\n");
-          if(LDconnect("192.168.0.11"))
+          printf("Connecting %s\n", pszServer);
+          if(LDconnect(pszServer))
           {
             fprintf(stderr, "Failed to connect\n");
              return 1;

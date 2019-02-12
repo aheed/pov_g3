@@ -1,0 +1,15 @@
+#!/bin/bash
+
+DIRECTORY=.
+
+while true
+do
+
+for i in $DIRECTORY/*.bmp; do
+  echo $i
+  ./picg3 127.0.0.1 $i -a4 -b 255 -r -45
+  sleep 3
+done
+
+done
+

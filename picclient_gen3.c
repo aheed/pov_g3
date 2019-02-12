@@ -148,7 +148,8 @@ int main(int argc, char *argv[]) {
                        NOF_LEDS,
                        povledRadius,
                        gamma,
-                       rotation))
+                       rotation,
+                       0)) //yflip
   {
     printf("failed to init\n");
     return 2;
@@ -186,7 +187,6 @@ int main(int argc, char *argv[]) {
      LDgetLedDataFromBmpData4(pBuf,
                               brightness,
                               leddata,
-                              0,
                               gamma,
                               startLed,
                               endLed);
