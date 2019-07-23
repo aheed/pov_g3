@@ -10,13 +10,15 @@
 #include <errno.h>
 #include "ldprotocol.h"
 
-
+#define LS_BUFFER_SIZE_FRAMES (g_bufBytes / g_frameBytes)
 
 static char * g_pBuf;
 static int g_bufBytes;
 static pthread_t g_worker;
 static int g_servsock;
 static int g_framesread = 0;
+static int g_framesInBuffer = 0;
+static int g_frameBytes = 1;
 
 ////////////////////////////////////////////////
 //
@@ -24,7 +26,7 @@ static void *worker_entry(void *param)
 {
   int connsock;
   char response[LD_ACK_SIZE] = {LD_ACK_CHAR};
-  volatile int bytesread, totalbytesread;
+  int bytesread, totalbytesread;
   g_framesread = 0;
   struct pollfd fds[1];
   int timeout_msecs = 1000;
@@ -41,6 +43,8 @@ static void *worker_entry(void *param)
   
     printf("got connection\n");
 
+    g_framesInBuffer = 0;
+
     fds[0].fd = connsock;
     fds[0].events = POLLIN;
 
@@ -49,6 +53,12 @@ static void *worker_entry(void *param)
       bytesread = 0;
       totalbytesread = 0;
       
+      if(g_framesInBuffer >= LS_BUFFER_SIZE_FRAMES)
+      {
+        printf("Buffer full  g_framesInBuffer:%d LS_BUFFER_SIZE_FRAMES:%d\n", g_framesInBuffer, LS_BUFFER_SIZE_FRAMES);
+        break;
+      }
+
       do
       {
         fds[0].fd = connsock;
@@ -62,23 +72,24 @@ static void *worker_entry(void *param)
         }
 
         bytesread = read(connsock,
-                         g_pBuf + totalbytesread,  //pointer arithmetic
-                         g_bufBytes - totalbytesread);
+                         g_pBuf + (g_framesInBuffer * g_frameBytes) + totalbytesread,  //pointer arithmetic
+                         g_frameBytes - totalbytesread);
         totalbytesread += bytesread;
-        //printf("bytesread:%d totalbytesread:%d g_bufBytes:%d\n", bytesread, totalbytesread, g_bufBytes);
-      } while((totalbytesread < g_bufBytes) && (bytesread > 0));
+        //printf("bytesread:%d totalbytesread:%d g_frameBytes:%d\n", bytesread, totalbytesread, g_frameBytes);
+      } while((totalbytesread < g_frameBytes) && (bytesread > 0));
 
-      //printf("totalbytesread:%d bytesread:%d g_bufBytes:%d\n", totalbytesread, bytesread, g_bufBytes);
+      //printf("totalbytesread:%d bytesread:%d g_frameBytes:%d\n", totalbytesread, bytesread, g_frameBytes);
 
-      if((totalbytesread != g_bufBytes) || (bytesread < 0))
+      if((totalbytesread != g_frameBytes) || (bytesread < 0))
       {
         fprintf(stderr,"failed to receive frame\n");
-        printf("totalbytesread:%d bytesread:%d g_bufBytes:%d\n", totalbytesread, bytesread, g_bufBytes);
+        printf("totalbytesread:%d bytesread:%d g_frameBytes:%d\n", totalbytesread, bytesread, g_frameBytes);
         break;
       }
 
+      g_framesInBuffer++;
       g_framesread++;
-      printf("Frames=%d\n", g_framesread);
+      printf("g_framesInBuffer=%d g_framesread=%d\n", g_framesInBuffer, g_framesread);
       if(write(connsock, response, LD_ACK_SIZE) < 0)
       {
         fprintf(stderr,"fel vid skrivningen till socket\n");
@@ -95,7 +106,7 @@ static void *worker_entry(void *param)
 
 ////////////////////////////////////////////////
 //
-int LDListen(char * const pBuf, int bufBytes)
+int LDListen(char * const pBuf, int bufBytes, int frameBytes)
 {
   struct sockaddr_in server;
   pthread_attr_t attr;
@@ -103,7 +114,7 @@ int LDListen(char * const pBuf, int bufBytes)
 
   g_pBuf = pBuf;
   g_bufBytes = bufBytes;
-
+  g_frameBytes = frameBytes;
 
   // Set up server socket
   if((g_servsock=socket(AF_INET,SOCK_STREAM,0)) < 0){ 
@@ -117,19 +128,19 @@ int LDListen(char * const pBuf, int bufBytes)
   server.sin_addr.s_addr=htonl(INADDR_ANY);
   server.sin_port=htons(LDPORT);
 
-  size_t t1 = g_bufBytes;
+  size_t t1 = g_frameBytes;
   size_t t2 = sizeof(int);
   if (setsockopt(g_servsock, SOL_SOCKET, SO_RCVLOWAT, &t1, t2) < 0) {
       perror(": setsockopt");
   }
 
   if(bind(g_servsock, (struct sockaddr*) &server, sizeof(server)) < 0){
-    fprintf(stderr,"kan inte utföra bind\n");
+    fprintf(stderr,"bind failed\n");
     return 2;
   }
 
   if(listen(g_servsock, 256) < 0){
-    fprintf(stderr,"kan inte lyssna\n");
+    fprintf(stderr,"listen failed\n");
     return 3;
   }
 
@@ -189,6 +200,8 @@ int LDListen(char * const pBuf, int bufBytes)
   }  */
   
   pthread_attr_destroy(&attr);
+
+  printf("server started LS_BUFFER_SIZE_FRAMES=%d g_bufBytes=%d g_frameBytes=%d\n", LS_BUFFER_SIZE_FRAMES, g_bufBytes, g_frameBytes);
   return 0;
 }
 
@@ -197,6 +210,13 @@ int LDListen(char * const pBuf, int bufBytes)
 int LDGetReceivedFrames()
 {
   return g_framesread;
+}
+
+////////////////////////////////////////////////
+//
+int LDGetNofFramesInBuffer()
+{
+  return g_framesInBuffer;
 }
 
 ////////////////////////////////////////////////

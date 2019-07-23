@@ -13,9 +13,11 @@ extern "C" {
 // Starts server thread
 // Returns 0 if successful
 // Non-blocking
-int LDListen(char * const pBuf, int bufBytes);
+int LDListen(char * const pBuf, int bufBytes, int frameBytes);
 
 int LDGetReceivedFrames();
+
+int LDGetNofFramesInBuffer();
 
 void LDStopServer();
 

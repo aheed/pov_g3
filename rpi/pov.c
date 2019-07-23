@@ -39,12 +39,14 @@ $ sudo ./pov
 #define REV_TIME_AVG_COEFFICIENT 10 //2
 #define REV_TIME_CORRECTION_COEFFICIENT 2
 
+#define MAX_FRAMES_IN_BUFFER 1000
+#define BUFFER_SIZE (MAX_FRAMES_IN_BUFFER * POV_FRAME_SIZE)
 
 volatile int eventCounter = 0;
 volatile int oldeventCounter = 0;
 
 
-/*volatile*/ static uint8_t leddata[NOF_SECTORS * NOF_LEDS * LED_DATA_SIZE] = {0};
+/*volatile*/ static uint8_t leddata[BUFFER_SIZE] = {0};
 
 
 
@@ -144,7 +146,7 @@ int main( int argc, char* args[] )
   }
 
 
-  if(LDListen(leddata, POV_FRAME_SIZE))
+  if(LDListen(leddata, BUFFER_SIZE, POV_FRAME_SIZE))
   {
     fprintf (stderr, "Failed to setup server\n");
     return 1;
