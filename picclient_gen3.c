@@ -223,6 +223,8 @@ int main(int argc, char *argv[]) {
 */
 //-----------------------------------
 
+  printf("NOF_SECTORS=%d\nNOF_LEDS=%d\n\n", NOF_SECTORS, NOF_LEDS);
+
   if(LDTransmit(leddata, POV_FRAME_SIZE))
   {
     printf("Failed to transmit led data to server\n");

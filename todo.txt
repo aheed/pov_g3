@@ -27,6 +27,7 @@ sketch:
 
 hw:
 accelerometer for monitoring balance?
+Hall effect sensor for rev synch?
 
 web based simulator:
   Use correct class as argument SignalR method "UpdatePOV". Make the byte array readable as an array of numbers on the client side.*
@@ -42,13 +43,30 @@ web based simulator:
 monpov:
 test against sketch*
 
+
+rpi:
+Unify POV geometry client <-> rpi server
+Allow more complex LED geometry than just distance from centre
+Remove all leddata from server code*
+Edit readme file to reflect use of rpi zero w
+Test interrupt handling with signal generator*
+Performance test*
+  ca 10 FPS streaming over wifi with video client
+Test Performance of streaming video locally
+  - decoding in real-time
+  - pre baked led data
+Add support for holding multiple frames in RAM
+
+
 other:
 Try using ImageMagick to gamma-correct pics in a pre-process step before uploading
 Build script taking number of sectors as argument
 Use half the number of leds, double the number of sectors*
+Make client for pre baked led data/frame batch processing
 
  
 ----------------
+White fan
 Typical cycles per rev (at highest fan speed (3)):
 12239590 with fan blades
 10500544 without fan blades
