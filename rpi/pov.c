@@ -4,7 +4,7 @@ Persistence Of Vision project
   Adafruit Dotstar strip, HW SPI
   Interrupt driven rev synch, wiringPi
 
-$ gcc bmp.c ldserver.c pov.c -o pov -lwiringPi -lrt -lm -lpthread
+$ gcc bmp.c ldserver.c ns_clock.c pov.c -o pov -lwiringPi -lrt -lm -lpthread
 $ sudo ./pov
 
 */
@@ -22,19 +22,19 @@ $ sudo ./pov
 #include <wiringPi.h>
 #include "../common/ledconfig.h"
 #include "ldserver.h"
+#include "ns_clock.h"
 
 
 
 #define SPI_BITRATE 8000000
 
-#define SECTOR_DATA_SIZE (sizeof(leddata) / NOF_SECTORS) //bytes per sector
-
-//255 is max but battery and rPi have power limitations
-#define MAX_BRIGHTNESS 64 //128
+#define SECTOR_DATA_SIZE (sizeof(leddata) / (MAX_FRAMES_IN_BUFFER * NOF_SECTORS)) //bytes per sector
 
 #define SLEEP_PER_LOOP 10000 //500000 // nanoseconds
 
 #define MIN_REV_TIME 1000000 //nsec
+#define FRAMES_PER_SEC 24
+#define FRAME_TIME_NS (1000000000 / FRAMES_PER_SEC) //nsec
 
 #define REV_TIME_AVG_COEFFICIENT 10 //2
 #define REV_TIME_CORRECTION_COEFFICIENT 2
@@ -46,7 +46,8 @@ volatile int eventCounter = 0;
 volatile int oldeventCounter = 0;
 
 
-/*volatile*/ static uint8_t leddata[BUFFER_SIZE] = {0};
+static uint8_t leddata[BUFFER_SIZE] = {0};
+uint8_t* pleddata = NULL;
 
 
 
@@ -57,34 +58,28 @@ void myInterrupt(void) {
 
 
 // -------------------------------------------------------------------------
-
 int main( int argc, char* args[] )
 {
   int i;
   int      fd;         // File descriptor if using hardware SPI
   struct timespec sleeper, dummy;
   int led, sector;
-  long long rev_start_time = 0;
-  long long time_since_rev_start;
-  long long last_rev_time = 0;
-  long long avg_rev_time = 0;
-  long long current_time = 0;
-  long long rev_start_time_calc = 0;
-  long long time_since_rev_start_calc = 0;
-  long long start_time_diff = 0;
-  long long max_start_time_diff = 0;
+  nsc_time_t rev_start_time = 0;
+  nsc_timeperiod_t time_since_rev_start;
+  nsc_timeperiod_t last_rev_time = 0;
+  nsc_timeperiod_t avg_rev_time = 0;
+  nsc_time_t current_time = 0;
+  nsc_time_t rev_start_time_calc = 0;
+  nsc_timeperiod_t time_since_rev_start_calc = 0;
+  nsc_timeperiod_t start_time_diff = 0;
+  nsc_timeperiod_t max_start_time_diff = 0;
+  nsc_time_t frame_start_time = 0;
+  nsc_timeperiod_t time_since_frame_start = 0;
 
-  struct timespec resolution;
   unsigned int current_sector = 93; //current orientation of LED strip
   unsigned int last_sector = 93;
+  unsigned int current_frame = 0;
 
-
-  int animx = 0;
-  int animy = 0;
-
-  int animstepx = 7;
-  int animstepy = 3;
-  const int animmax = 100;
 
   struct spi_ioc_transfer xfer[3] = {
   { .tx_buf        = 0, // Header (zeros)
@@ -154,36 +149,18 @@ int main( int argc, char* args[] )
 
   while(1)
   {
-    ///////////////////////////////////////////
-    // What time is it?
-    clock_gettime(CLOCK_MONOTONIC, &resolution);
-    current_time = resolution.tv_nsec;
-
-    time_since_rev_start = current_time - rev_start_time;
-    if(time_since_rev_start < 0)
-    {
-      time_since_rev_start = time_since_rev_start + 1000000000; //in case clock_gettime wraps around
-    }
+    current_time = nsc_get_current_time();
+    time_since_rev_start = nsc_diff_time_time(current_time, rev_start_time);
 
 
     //-----------------------------------------------
-    time_since_rev_start_calc = current_time - rev_start_time_calc;
-    if(time_since_rev_start_calc < 0)
-    {
-      time_since_rev_start_calc += 1000000000; //in case clock_gettime wraps around
-    }
+    time_since_rev_start_calc = nsc_diff_time_time(current_time, rev_start_time_calc);
 
     while((avg_rev_time != 0) && (time_since_rev_start_calc > avg_rev_time))
     {
       // By now a new rev should have started.
       time_since_rev_start_calc = time_since_rev_start_calc - avg_rev_time;
-
-      rev_start_time_calc += avg_rev_time;
-      if(rev_start_time_calc > 1000000000)
-      {
-        rev_start_time_calc -= 1000000000; //wrap
-      }
-
+      rev_start_time_calc = nsc_add_time_period(rev_start_time_calc, avg_rev_time);
     }
     //---------------------------------------------------
 
@@ -205,47 +182,15 @@ int main( int argc, char* args[] )
         }
 
         last_rev_time = time_since_rev_start;
-        
 
         
         // Adjust calculated rev_start_time     
-        start_time_diff = rev_start_time - rev_start_time_calc;
-
-        // Handle clock wrap
-        if(start_time_diff < -(1000000000 / 2))
-        {
-           start_time_diff += 1000000000;
-        }
-
-        if(start_time_diff > (1000000000 / 2))
-        {
-           start_time_diff -= 1000000000;
-        }
+        start_time_diff = nsc_diff_time_time(rev_start_time, rev_start_time_calc);
 
         //Handle rev wrap
-        if(start_time_diff < -(avg_rev_time)/2)
-        {
-          start_time_diff += avg_rev_time;
-        }
-        
-        if(start_time_diff > (avg_rev_time)/2)
-        {
-          start_time_diff -= avg_rev_time;
-        }
+        start_time_diff = nsc_wrap_period(start_time_diff, avg_rev_time);
 
-        rev_start_time_calc += start_time_diff / REV_TIME_CORRECTION_COEFFICIENT;
-
-        // Handle clock wrap again
-        if(rev_start_time_calc > 1000000000)
-        {  
-          rev_start_time_calc -= 1000000000;
-        }
-
-        if(rev_start_time_calc < -1000000000)
-        {  
-          rev_start_time_calc += 1000000000;
-        }
-
+        rev_start_time_calc = nsc_add_time_period(rev_start_time_calc, start_time_diff / REV_TIME_CORRECTION_COEFFICIENT);
       }
 
       oldeventCounter = eventCounter;
@@ -276,7 +221,9 @@ int main( int argc, char* args[] )
 
         ////////////////////////////////////////
         // Transmit LED data on SPI
-        xfer[1].tx_buf   = (unsigned long)&(leddata[current_sector * SECTOR_DATA_SIZE]);
+        pleddata = leddata + (current_frame * POV_FRAME_SIZE); // pointer arithmetic
+        //xfer[1].tx_buf   = (unsigned long)&(pleddata[current_sector * SECTOR_DATA_SIZE]);
+        xfer[1].tx_buf   = (unsigned long)(pleddata + (current_sector * SECTOR_DATA_SIZE)); // pointer arithmetic
         (void)ioctl(fd, SPI_IOC_MESSAGE(3), xfer);
 
         /*//sleep 75% of expected time until next sector
@@ -299,7 +246,22 @@ int main( int argc, char* args[] )
       sleeper.tv_nsec = SLEEP_PER_LOOP;
       nanosleep(&sleeper, &dummy);
     }
-  }
+
+    ///////////////////////////////////////////////////////
+    // Update frame index
+    time_since_frame_start = nsc_diff_time_time(current_time, frame_start_time);
+    if(time_since_frame_start > FRAME_TIME_NS)
+    {
+      frame_start_time = current_time;
+      if(++current_frame >= LDGetNofFramesInBuffer())
+      {
+        // replay from frame 0
+        current_frame = 0;
+      }
+      //printf("current_frame=%d\n", current_frame);
+    }
+
+  }//while
   
 
   /*

@@ -45,7 +45,7 @@ test against sketch*
 
 
 rpi:
-Unify POV geometry client <-> rpi server
+Unify POV geometry client <-> rpi server*
 Allow more complex LED geometry than just distance from centre
 Remove all leddata from server code*
 Edit readme file to reflect use of rpi zero w
@@ -55,7 +55,11 @@ Performance test*
 Test Performance of streaming video locally
   - decoding in real-time
   - pre baked led data
-Add support for holding multiple frames in RAM
+Add support for holding multiple frames in RAM*
+Add support for replaying multiple frames at constant frame rate*
+Refactor pov.c: put clock arithmetic with wrap handling in separate module*
+Refactor pov.c: put led data transfer (SPI) in a separate module
+
 
 
 other:
