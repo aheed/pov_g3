@@ -4,7 +4,7 @@ Persistence Of Vision project
   Adafruit Dotstar strip, HW SPI
   Interrupt driven rev synch, wiringPi
 
-$ gcc bmp.c ldserver.c ns_clock.c pov.c -o pov -lwiringPi -lrt -lm -lpthread
+$ gcc bmp.c ldserver.c ns_clock.c ledstrip.c pov.c -o pov -lwiringPi -lrt -lm -lpthread
 $ sudo ./pov
 
 */
@@ -13,20 +13,18 @@ $ sudo ./pov
 #include <stdint.h>
 #include <stdio.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <sys/mman.h>
-#include <sys/ioctl.h>
-#include <linux/spi/spidev.h>
 #include <time.h>
 #include <string.h>
 #include <wiringPi.h>
 #include "../common/ledconfig.h"
 #include "ldserver.h"
 #include "ns_clock.h"
+#include "ledstrip.h"
 
 
 
-#define SPI_BITRATE 8000000
+
 
 #define SECTOR_DATA_SIZE (sizeof(leddata) / (MAX_FRAMES_IN_BUFFER * NOF_SECTORS)) //bytes per sector
 
@@ -45,10 +43,7 @@ $ sudo ./pov
 volatile int eventCounter = 0;
 volatile int oldeventCounter = 0;
 
-
 static uint8_t leddata[BUFFER_SIZE] = {0};
-uint8_t* pleddata = NULL;
-
 
 
 // -------------------------------------------------------------------------
@@ -56,13 +51,19 @@ void myInterrupt(void) {
    eventCounter++;
 }
 
+void main_loop_sleep()
+{
+  struct timespec sleeper, dummy;
+  sleeper.tv_sec  = 0;
+  sleeper.tv_nsec = SLEEP_PER_LOOP;
+  nanosleep(&sleeper, &dummy);
+}
+
 
 // -------------------------------------------------------------------------
 int main( int argc, char* args[] )
 {
-  int i;
-  int      fd;         // File descriptor if using hardware SPI
-  struct timespec sleeper, dummy;
+  int i;  
   int led, sector;
   nsc_time_t rev_start_time = 0;
   nsc_timeperiod_t time_since_rev_start;
@@ -80,55 +81,20 @@ int main( int argc, char* args[] )
   unsigned int last_sector = 93;
   unsigned int current_frame = 0;
 
-
-  struct spi_ioc_transfer xfer[3] = {
-  { .tx_buf        = 0, // Header (zeros)
-    .rx_buf        = 0,
-    .len           = 4,
-    .delay_usecs   = 0,
-    .bits_per_word = 8,
-    .cs_change     = 0,
-    .speed_hz = SPI_BITRATE},
-  { .rx_buf        = 0, // Color payload
-    .len           = NOF_LEDS * 4,
-    .delay_usecs   = 0,
-    .bits_per_word = 8,
-    .cs_change     = 0,
-    .speed_hz = SPI_BITRATE},
-  { .tx_buf        = 0, // Footer (zeros)
-    .rx_buf        = 0,
-    .len = (NOF_LEDS + 15) / 16,
-    .delay_usecs   = 0,
-    .bits_per_word = 8,
-    .cs_change     = 0,
-    .speed_hz = SPI_BITRATE}
-  };
-
-
-  ///////////////////////////////////////7
-  // Init SPI  
-  if((fd = open("/dev/spidev0.0", O_RDWR)) < 0) {
-    printf("Can't open /dev/spidev0.0 (try 'sudo')\n");
-    return 2;
-  }
- 
-  uint8_t mode = SPI_MODE_0 | SPI_NO_CS;
-  ioctl(fd, SPI_IOC_WR_MODE, &mode);
-  // The actual data rate may be less than requested.
-  // Hardware SPI speed is a function of the system core
-  // frequency and the smallest power-of-two prescaler
-  // that will not exceed the requested rate.
-  // e.g. 8 MHz request: 250 MHz / 32 = 7.8125 MHz.
-  ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, SPI_BITRATE);
-
   printf("\n\n");
   printf("NOF_SECTORS=%d\nNOF_LEDS=%d\n\n", NOF_SECTORS, NOF_LEDS);
+
+  if (ledstrip_init())
+  {
+    printf("Failed to init ledstrip\n");
+    return 1;
+  }
 
   /////////////////////////////////////////////////////////
   // Set up interrupt routine for rev synch with WiringPi
 
   if (wiringPiSetup () == -1)
-    return 3 ;
+    return 2 ;
   
   pinMode (4,  OUTPUT) ; //pin 16
   pinMode (5, INPUT) ;  //pin 18
@@ -137,14 +103,14 @@ int main( int argc, char* args[] )
   // and attach myInterrupt() to the interrupt
   if ( wiringPiISR (5, INT_EDGE_FALLING, &myInterrupt) < 0 ) {
       fprintf (stderr, "Unable to setup ISR: %s\n", strerror (errno));
-      return 1;
+      return 3;
   }
 
 
   if(LDListen(leddata, BUFFER_SIZE, POV_FRAME_SIZE))
   {
     fprintf (stderr, "Failed to setup server\n");
-    return 1;
+    return 4;
   }
 
   while(1)
@@ -218,33 +184,16 @@ int main( int argc, char* args[] )
           //printf("sector:%u last:%u\n", current_sector, last_sector);
         }
         last_sector = current_sector;
-
-        ////////////////////////////////////////
-        // Transmit LED data on SPI
-        pleddata = leddata + (current_frame * POV_FRAME_SIZE); // pointer arithmetic
-        //xfer[1].tx_buf   = (unsigned long)&(pleddata[current_sector * SECTOR_DATA_SIZE]);
-        xfer[1].tx_buf   = (unsigned long)(pleddata + (current_sector * SECTOR_DATA_SIZE)); // pointer arithmetic
-        (void)ioctl(fd, SPI_IOC_MESSAGE(3), xfer);
-
-        /*//sleep 75% of expected time until next sector
-        sleeper.tv_sec  = 0;
-        sleeper.tv_nsec = (avg_rev_time * 2) / (NOF_SECTORS * 4);
-        nanosleep(&sleeper, &dummy);*/
+        ledstrip_setcolors(leddata + (current_frame * POV_FRAME_SIZE) + (current_sector * SECTOR_DATA_SIZE)); // pointer arithmetic
       }
       else
       {
-        // wait a while
-        sleeper.tv_sec  = 0;
-        sleeper.tv_nsec = SLEEP_PER_LOOP;
-        nanosleep(&sleeper, &dummy);
+        main_loop_sleep();
       }
     }
     else
     {
-      // wait a while
-      sleeper.tv_sec  = 0;
-      sleeper.tv_nsec = SLEEP_PER_LOOP;
-      nanosleep(&sleeper, &dummy);
+      main_loop_sleep();
     }
 
     ///////////////////////////////////////////////////////
@@ -262,15 +211,6 @@ int main( int argc, char* args[] )
     }
 
   }//while
-  
-
-  /*
-  // Cleanup
-  if(fd) {
-   close(fd);
-   fd = -1;
-  }
-  */
 
   return 0;
 }
