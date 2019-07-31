@@ -1,56 +1,35 @@
-/* 
-Persistence Of Vision project
-  Raspberry Pi
-  Adafruit Dotstar strip, HW SPI
-  Interrupt driven rev synch, wiringPi
-
-$ gcc bmp.c ldserver.c ns_clock.c ledstrip.c pov.c -o pov -lwiringPi -lrt -lm -lpthread
-$ sudo ./pov
-
-*/
-
-
 #include <stdint.h>
 #include <stdio.h>
 #include <errno.h>
 #include <sys/mman.h>
 #include <time.h>
 #include <string.h>
-#include <wiringPi.h>
 #include "../common/ledconfig.h"
 #include "ldserver.h"
 #include "ns_clock.h"
 #include "ledstrip.h"
-
-
-
-
+#include "revsensor.h"
 
 #define SECTOR_DATA_SIZE (sizeof(leddata) / (MAX_FRAMES_IN_BUFFER * NOF_SECTORS)) //bytes per sector
-
 #define SLEEP_PER_LOOP 10000 //500000 // nanoseconds
-
 #define MIN_REV_TIME 1000000 //nsec
 #define FRAMES_PER_SEC 24
 #define FRAME_TIME_NS (1000000000 / FRAMES_PER_SEC) //nsec
-
 #define REV_TIME_AVG_COEFFICIENT 10 //2
 #define REV_TIME_CORRECTION_COEFFICIENT 2
-
 #define MAX_FRAMES_IN_BUFFER 1000
 #define BUFFER_SIZE (MAX_FRAMES_IN_BUFFER * POV_FRAME_SIZE)
 
 volatile int eventCounter = 0;
 volatile int oldeventCounter = 0;
-
 static uint8_t leddata[BUFFER_SIZE] = {0};
 
-
 // -------------------------------------------------------------------------
-void myInterrupt(void) {
+void revSensorInterrupt(void) {
    eventCounter++;
 }
 
+// -------------------------------------------------------------------------
 void main_loop_sleep()
 {
   struct timespec sleeper, dummy;
@@ -58,7 +37,6 @@ void main_loop_sleep()
   sleeper.tv_nsec = SLEEP_PER_LOOP;
   nanosleep(&sleeper, &dummy);
 }
-
 
 // -------------------------------------------------------------------------
 int main( int argc, char* args[] )
@@ -76,13 +54,11 @@ int main( int argc, char* args[] )
   nsc_timeperiod_t max_start_time_diff = 0;
   nsc_time_t frame_start_time = 0;
   nsc_timeperiod_t time_since_frame_start = 0;
-
   unsigned int current_sector = 93; //current orientation of LED strip
   unsigned int last_sector = 93;
   unsigned int current_frame = 0;
 
-  printf("\n\n");
-  printf("NOF_SECTORS=%d\nNOF_LEDS=%d\n\n", NOF_SECTORS, NOF_LEDS);
+  printf("\n\nNOF_SECTORS=%d\nNOF_LEDS=%d\n\n", NOF_SECTORS, NOF_LEDS);
 
   if (ledstrip_init())
   {
@@ -90,27 +66,16 @@ int main( int argc, char* args[] )
     return 1;
   }
 
-  /////////////////////////////////////////////////////////
-  // Set up interrupt routine for rev synch with WiringPi
-
-  if (wiringPiSetup () == -1)
-    return 2 ;
-  
-  pinMode (4,  OUTPUT) ; //pin 16
-  pinMode (5, INPUT) ;  //pin 18
-
-  // set Pin 18 to generate an interrupt on high-to-low transitions
-  // and attach myInterrupt() to the interrupt
-  if ( wiringPiISR (5, INT_EDGE_FALLING, &myInterrupt) < 0 ) {
-      fprintf (stderr, "Unable to setup ISR: %s\n", strerror (errno));
-      return 3;
+  if(revsensor_init(&revSensorInterrupt))
+  {
+    printf("Failed to init rev synch interrupt routine\n");
+    return 2;
   }
-
 
   if(LDListen(leddata, BUFFER_SIZE, POV_FRAME_SIZE))
   {
     fprintf (stderr, "Failed to setup server\n");
-    return 4;
+    return 3;
   }
 
   while(1)
@@ -214,4 +179,3 @@ int main( int argc, char* args[] )
 
   return 0;
 }
-
