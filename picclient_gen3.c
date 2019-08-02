@@ -147,6 +147,7 @@ int main(int argc, char *argv[]) {
                        NOF_SECTORS,
                        NOF_LEDS,
                        povledRadius,
+                       povledAngle,
                        gamma,
                        rotation,
                        0)) //yflip

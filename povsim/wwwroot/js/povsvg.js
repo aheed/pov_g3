@@ -83,9 +83,9 @@ function drawpovsvg(svgElem, pov) {
         for(let led=0; led < pov.nofLeds; led++)
         {
             let ledRadius = pov.povledRadius[led];
+            let ledAngleOffset = pov.povledAngle[led] / 10000;
             if(ledRadius < 0)
             {
-                //startAng += Math.PI; //Add 180 degrees
                 ledRadius = -ledRadius;
             }
             ledRadius *= radiusScale;
@@ -98,12 +98,13 @@ function drawpovsvg(svgElem, pov) {
             {
                 //let startAng = aLen * sector;
                 angle -= deltaAngle;
+                let ledAngle = angle + ledAngleOffset;
                 
                 let ledIndex = sector * pov.nofLeds + led;
                 let strokeColor = '#' + pov.ledColors[ledIndex].toString(16).padStart(6, '0');
 
-                let x = xc + ledRadius * Math.cos(angle);
-                let y = yc + ledRadius * -Math.sin(angle);
+                let x = xc + ledRadius * Math.cos(ledAngle);
+                let y = yc + ledRadius * -Math.sin(ledAngle);
 
                 let d = `M ${lastx} ${lasty} A ${ledRadius} ${ledRadius} 0 0 0 ${x} ${y}`;
                 //console.log(" -- " + d);

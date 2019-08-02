@@ -45,11 +45,12 @@ function drawpov(canv, pov) {
         for(let sector=0; sector < pov.nofSectors; sector++)
         {
             let startAng = aLen * sector;
+            let ledAng =  startAng - (pov.povledAngle[led] / 10000);
             
             let ledRadius = pov.povledRadius[led];
             if(ledRadius < 0)
             {
-                startAng += Math.PI; //Add 180 degrees
+                ledAng += Math.PI; //Add 180 degrees
                 ledRadius = -ledRadius;
             }
 
@@ -58,7 +59,7 @@ function drawpov(canv, pov) {
             ctx.strokeStyle = strokeColor;
             
             ctx.beginPath();
-            ctx.arc(xc, yc, ledRadius * radiusScale, startAng, startAng + aLen);
+            ctx.arc(xc, yc, ledRadius * radiusScale, ledAng, ledAng + aLen);
             ctx.stroke();
         }
     }

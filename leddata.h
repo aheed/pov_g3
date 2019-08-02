@@ -10,12 +10,12 @@ in Dotstar LED raw data format
 #include "bmp.h"
 
 // Returns 0 if successful
-int LDInitFromBmp(const char * const pszFileName,
+/*int LDInitFromBmp(const char * const pszFileName,
                   const unsigned char brightness,
                   const int nofSectors,
                   const int nofLeds,
                   const int *ledRadiusArray,
-                  const int gamma);
+                  const int gamma);*/
 
 // Returns 0 if successful
 int LDInitFromBmpData(char * const pBmpBuf,
@@ -24,6 +24,7 @@ int LDInitFromBmpData(char * const pBmpBuf,
                   const int nofSectors,
                   const int nofLeds,
                   const int *ledRadiusArray,
+                  const int *ledAngleArray,
                   const int gamma,
                   const int rotation, // 1/16 degrees clockwise
                   const int yflip);

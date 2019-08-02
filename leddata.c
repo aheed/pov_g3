@@ -246,6 +246,7 @@ int LDInitFromBmpData(char * const pBmpBuf,
                   const int nofSectors,
                   const int nofLeds,
                   const int *ledRadiusArray,
+                  const int *ledAngleArray,
                   const int gamma,
                   const int rotation,
                   const int yflip)
@@ -516,9 +517,6 @@ int LDInitFromBmpData(char * const pBmpBuf,
     startAng = -aLen * sector + rotation + aLen/2;
     startAngRad = ((double)startAng / 5760) * 2 * MYPI;
     
-    double cosAngle= cos((double)startAngRad);
-    double minusSinAngle= -sin((double)startAngRad);
-    
     printf(".");
     fflush(stdout);
   	 
@@ -530,6 +528,10 @@ int LDInitFromBmpData(char * const pBmpBuf,
     	double totalWeight = 0;
     	
     	// calculate coordinates of led-sector-combo centre
+      double ledAngRad = startAngRad + (double)(ledAngleArray[led]) / 10000;
+      double cosAngle= cos((double)ledAngRad);
+      double minusSinAngle= -sin((double)ledAngRad);
+      
     	double lsxcoord = cosAngle * ledRadiusArray[led];
       double lsycoord = minusSinAngle * ledRadiusArray[led];
       if(yflip)
@@ -608,6 +610,7 @@ int LDInitFromBmpData(char * const pBmpBuf,
 
 ///////////////////////////////////////////////////////////////
 //
+/*
 int LDInitFromBmp(const char * const pszFileName,
                   const unsigned char brightness,
                   const int nofSectors,
@@ -635,7 +638,7 @@ int LDInitFromBmp(const char * const pszFileName,
                     gamma,
                     0,
                     0);
-}
+}*/
 
 ///////////////////////////////////////////////////////////////
 // Uses averaging over each sector/led combo

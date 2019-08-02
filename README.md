@@ -80,3 +80,14 @@ For best result with simulator:
 
 
 
+# G4
+rpi zero w
+lipo shim
+lipo batteries (separate for rpi and led strip)
+Hall effect sensor TLV49645 + magnet for rev synch
+More advanced LED geometry
+Frame sequence stored in server and replayed at fixed rate
+All components mounted on revolving Vinyl LP record
+
+
+

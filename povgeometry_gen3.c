@@ -240,5 +240,42 @@ const int povledRadius[NOF_LEDS] =
 */
 };
 
+// radians x10000
+const int povledAngle[NOF_LEDS] =
+{
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0,
+0
+};
+
 #endif
 

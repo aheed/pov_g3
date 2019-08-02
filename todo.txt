@@ -33,11 +33,12 @@ web based simulator:
   Use correct class as argument SignalR method "UpdatePOV". Make the byte array readable as an array of numbers on the client side.*
   Use MessagePack (instead of the default json format) to reduce data size on "UpdatePOV".
   make basic canvas based redraw function*
-  Make the canvas resizeable (change with window size)
+  Make the canvas resizeable (change with window size)*
   Black background*
   General cleanup*
   dockerize
   svg based redraw function
+  use T4 template to unify povgeometry with clients
   
   
 monpov:
@@ -58,7 +59,7 @@ Test Performance of streaming video locally
 Add support for holding multiple frames in RAM*
 Add support for replaying multiple frames at constant frame rate*
 Refactor pov.c: put clock arithmetic with wrap handling in separate module*
-Refactor pov.c: put led data transfer (SPI) in a separate module
+Refactor pov.c: put led data transfer (SPI) in a separate module*
 
 
 

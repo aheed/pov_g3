@@ -11,6 +11,8 @@ namespace PovSim
 
         public int[] povledRadius = Povgeometry.povledRadius;
 
+        public int[] povledAngle = Povgeometry.povledAngle;
+
         public int[] ledColors;
 
         public void Init(PovFramePayload payload)
