@@ -66,6 +66,7 @@ function drawpovsvg(svgElem, pov) {
         let radius = 100; //TEMP, should be led radius
         let angle = Math.PI;
         let deltaAngle = Math.PI / 16; //TEMP
+        let ledAngle = 0;
 
         lastx = xc + radius * Math.cos(angle - deltaAngle); //TEMP
         lasty = yc + radius * -Math.sin(angle - deltaAngle); //TEMP
@@ -76,7 +77,7 @@ function drawpovsvg(svgElem, pov) {
         console.log(svgElem.getAttribute("height"));
         console.log(radiusScale);
 
-        let strokeWidth = svgElem.getAttribute("width") *0.010 ; //px
+        let strokeWidth = svgElem.getAttribute("width") * 0.007; //0.010 ; //px
 
         deltaAngle = Math.PI * 2 / pov.nofSectors;
 
@@ -90,15 +91,17 @@ function drawpovsvg(svgElem, pov) {
             }
             ledRadius *= radiusScale;
 
-            angle = Math.PI;
-            lastx = xc + ledRadius * Math.cos(angle);
-            lasty = yc + ledRadius * -Math.sin(angle);
+            //angle = Math.PI;
+            angle = 0;
+            ledAngle = angle + ledAngleOffset;
+            lastx = xc + ledRadius * Math.cos(ledAngle);
+            lasty = yc + ledRadius * -Math.sin(ledAngle);
 
             for(let sector=0; sector < pov.nofSectors; sector++)
             {
                 //let startAng = aLen * sector;
                 angle -= deltaAngle;
-                let ledAngle = angle + ledAngleOffset;
+                ledAngle = angle + ledAngleOffset;
                 
                 let ledIndex = sector * pov.nofLeds + led;
                 let strokeColor = '#' + pov.ledColors[ledIndex].toString(16).padStart(6, '0');
