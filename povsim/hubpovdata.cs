@@ -9,9 +9,9 @@ namespace PovSim
         public int nofSectors = Povgeometry.NOF_SECTORS;
         public int nofLeds = Povgeometry.NOF_LEDS;
 
-        public int[] povledRadius = Povgeometry.povledRadius;
+        public int[] povledRadius = Povgeometry.PovledRadius;
 
-        public int[] povledAngle = Povgeometry.povledAngle;
+        public int[] povledAngle = Povgeometry.PovledAngle;
 
         public int[] ledColors;
 

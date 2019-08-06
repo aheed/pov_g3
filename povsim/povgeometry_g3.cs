@@ -1,18 +1,24 @@
-
+using System;
+using System.Linq;
 
 namespace povdata
 {
+    class LedCoordinate
+    {
+        public double x;
+        public double y;
+    }
 
     class Povgeometry
     {
         public const int NOF_SECTORS = 320;
-        public const int NOF_LEDS = 64;
+        public const int NOF_LEDS = 42;
         public const int LED_DATA_SIZE = 4;
         public const int POV_FRAME_SIZE = (NOF_SECTORS * NOF_LEDS * LED_DATA_SIZE);
 
-
-        public static readonly int[] povledRadius = 
-        {    
+/*
+        private static readonly int[] povledRadius =
+        {
         100,
         171,
         242,
@@ -77,10 +83,10 @@ namespace povdata
         215,
         148,
         88
-        };        
+        };
 
         // radians x10000
-        public static readonly int[] povledAngle =
+        private static readonly int[] povledAngle =
         {
         0,
         0,
@@ -147,5 +153,56 @@ namespace povdata
         4169,
         7491
         };
+*/
+
+        private static LedCoordinate[] _PovledRadiusDouble
+        {
+            get
+            {
+                double leddistance = 70.9677419355;
+                double x0;
+                var ret = new LedCoordinate[NOF_LEDS];
+                int i;
+                double x;
+                double y;
+                for(i=0; i<NOF_LEDS; i++)
+                {
+                    if(i < (NOF_LEDS / 2))
+                    {
+                        y = -60;
+                        x0 = 0.000001;
+                        x = x0 + i * leddistance;
+                    }
+                    else
+                    {
+                        y = 60;
+                        x0 = leddistance / 2;
+                        x = x0 + (NOF_LEDS - 1 - i) * leddistance;
+                    }
+                    ret[i] = new LedCoordinate {x = Math.Sqrt(Math.Pow(x, 2) + Math.Pow(y, 2)), y = y};
+                    //Console.WriteLine("{0} {1}", ret[i].x, ret[i].y);
+                }
+                return ret;
+            }
+        }
+
+        public static int[] PovledRadius
+        {
+            get 
+            {
+                var apa = _PovledRadiusDouble.Select(coord => (int)Math.Round(coord.x));
+                return apa.ToArray();
+            }
+        }
+
+        //public static int[] PovledAngle  => povledAngle;
+
+        public static int[] PovledAngle
+        {
+            get
+            {
+                return _PovledRadiusDouble.Select((coord) => (int)Math.Round(Math.Atan(coord.y / coord.x) * 10000)).ToArray();
+            }
+        }
     }
 }

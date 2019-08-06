@@ -36,7 +36,7 @@ function drawpov(canv, pov) {
     let radiusScale = (canv.height / 2) / maxAbsLedRadius;
     let aLen = 2 * Math.PI / pov.nofSectors; //rad
 
-    ctx.lineWidth = canv.width * 0.007; //0.010 ; //px
+    ctx.lineWidth = canv.width * 0.008; //0.010 ; //px
     //ctx.lineCap='butt'; 
 
     //console.log("pov.nofSectors: " + pov.nofSectors);
@@ -45,6 +45,8 @@ function drawpov(canv, pov) {
     {
         for(let sector=0; sector < pov.nofSectors; sector++)
         {
+            //console.log(pov.povledRadius[led]);
+            //console.log( pov.povledAngle[led]);
             let startAng = aLen * sector;
             let ledAng =  startAng - (pov.povledAngle[led] / 10000);
             

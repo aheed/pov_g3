@@ -77,7 +77,7 @@ function drawpovsvg(svgElem, pov) {
         console.log(svgElem.getAttribute("height"));
         console.log(radiusScale);
 
-        let strokeWidth = svgElem.getAttribute("width") * 0.007; //0.010 ; //px
+        let strokeWidth = svgElem.getAttribute("width") * 0.008; //0.010 ; //px
 
         deltaAngle = Math.PI * 2 / pov.nofSectors;
 
