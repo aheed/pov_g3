@@ -99,6 +99,7 @@ int main( int argc, char* args[] )
     // Handle any received rev synch interrupt
     if(oldeventCounter != eventCounter)
     {
+      //printf("oldeventCounter:%d eventCounter:%d\n", oldeventCounter, eventCounter);
       if(time_since_rev_start > MIN_REV_TIME)
       {
         rev_start_time = current_time;

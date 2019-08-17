@@ -5,14 +5,14 @@ namespace povdata
 {
     class LedCoordinate
     {
-        public double x;
+        public double r;
         public double y;
     }
 
     class Povgeometry
     {
         public const int NOF_SECTORS = 320;
-        public const int NOF_LEDS = 42;
+        public const int NOF_LEDS = 44;
         public const int LED_DATA_SIZE = 4;
         public const int POV_FRAME_SIZE = (NOF_SECTORS * NOF_LEDS * LED_DATA_SIZE);
 
@@ -170,16 +170,16 @@ namespace povdata
                     if(i < (NOF_LEDS / 2))
                     {
                         y = -60;
-                        x0 = 0.000001;
+                        x0 = leddistance / 2;
                         x = x0 + i * leddistance;
                     }
                     else
                     {
                         y = 60;
-                        x0 = leddistance / 2;
+                        x0 = 0.000000001;
                         x = x0 + (NOF_LEDS - 1 - i) * leddistance;
                     }
-                    ret[i] = new LedCoordinate {x = Math.Sqrt(Math.Pow(x, 2) + Math.Pow(y, 2)), y = y};
+                    ret[i] = new LedCoordinate {r = Math.Sqrt(Math.Pow(x, 2) + Math.Pow(y, 2)), y = y};
                     //Console.WriteLine("{0} {1}", ret[i].x, ret[i].y);
                 }
                 return ret;
@@ -190,7 +190,7 @@ namespace povdata
         {
             get 
             {
-                var apa = _PovledRadiusDouble.Select(coord => (int)Math.Round(coord.x));
+                var apa = _PovledRadiusDouble.Select(coord => (int)Math.Round(coord.r));
                 return apa.ToArray();
             }
         }
@@ -201,7 +201,7 @@ namespace povdata
         {
             get
             {
-                return _PovledRadiusDouble.Select((coord) => (int)Math.Round(Math.Atan(coord.y / coord.x) * 10000)).ToArray();
+                return _PovledRadiusDouble.Select((coord) => (int)Math.Round(Math.Atan(coord.y / coord.r) * 10000)).ToArray();
             }
         }
     }
