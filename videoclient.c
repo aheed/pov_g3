@@ -299,10 +299,11 @@ int main(int argc, char *argv[]) {
 
           if(LDInitFromBmpData(pFrameRGB->data[0],
                   &bmh,
-                  MAX_BRIGHTNESS,
+                  brightness,
                   NOF_SECTORS,
                   NOF_LEDS,
                   povledRadius,
+                  povledAngle,
                   1,
                   rotation,
                   1)) //yflip
@@ -324,7 +325,7 @@ int main(int argc, char *argv[]) {
                              1,
                              0);*/
         LDgetLedDataFromBmpData4(pFrameRGB->data[0],
-                            MAX_BRIGHTNESS,
+                            brightness,
                             leddata,
                             gamma,
                             startLed,
